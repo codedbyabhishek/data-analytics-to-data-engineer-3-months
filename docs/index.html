@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260220-6" />
+  <link rel="stylesheet" href="styles.css?v=20260220-7" />
 </head>
 <body>
   <div class="bg-shape bg-shape-1" aria-hidden="true"></div>
@@ -125,8 +125,8 @@
 
       <section class="panel">
         <div class="section-head">
-          <h2>Week Tracker</h2>
-          <p class="muted">Mark a week complete when your weekly deliverable is done.</p>
+          <h2>Week Roadmap</h2>
+          <p class="muted">Expand each week, complete tasks, and use references.</p>
         </div>
         <div id="weeksGrid" class="weeks-grid"></div>
       </section>
@@ -174,6 +174,21 @@
         </div>
         <p id="goalStatus" class="muted"></p>
       </section>
+
+      <section class="panel certificate-panel">
+        <div class="section-head">
+          <h2>Completion Certificate</h2>
+          <p class="muted">Unlock after all 13 weeks are marked complete.</p>
+        </div>
+        <div class="certificate-actions">
+          <button id="generateCertBtn" type="button">Generate Certificate</button>
+          <button id="shareLinkedInBtn" type="button" class="secondary">Share on LinkedIn</button>
+          <button id="shareXBtn" type="button" class="secondary">Share on X</button>
+          <button id="shareFacebookBtn" type="button" class="secondary">Share on Facebook</button>
+          <button id="copyCertLinkBtn" type="button" class="secondary">Copy Certificate Link</button>
+        </div>
+        <article id="certificateCard" class="certificate-card hidden"></article>
+      </section>
     </section>
 
     <p id="message" class="message" aria-live="polite"></p>
@@ -181,7 +196,7 @@
 
   <script src="https://unpkg.com/aws-amplify@4.3.46/dist/aws-amplify.min.js"></script>
   <script src="aws-config.js?v=20260220-2"></script>
-  <script src="app.js?v=20260220-6"></script>
+  <script src="app.js?v=20260220-7"></script>
 
   <footer class="site-footer">
     <div class="site-shell footer-shell">

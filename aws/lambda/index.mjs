@@ -26,6 +26,14 @@ function defaultCompletedWeeks() {
   return completed;
 }
 
+function defaultTaskProgress() {
+  const taskProgress = {};
+  for (const id of WEEK_IDS) {
+    taskProgress[id] = [];
+  }
+  return taskProgress;
+}
+
 function response(statusCode, body) {
   return {
     statusCode,
@@ -95,6 +103,8 @@ async function getOrCreateProgress(userId) {
     userId,
     goalWeeklyHours: 20,
     completedWeeks: defaultCompletedWeeks(),
+    taskProgress: defaultTaskProgress(),
+    certificate: null,
     createdAt: now,
     updatedAt: now
   };
@@ -206,7 +216,11 @@ export const handler = async (event) => {
       const body = JSON.parse(event.body || "{}");
       const goalWeeklyHours = Number(body.goalWeeklyHours || 20);
       const completedWeeks = body.completedWeeks || defaultCompletedWeeks();
+      const taskProgress = body.taskProgress || defaultTaskProgress();
+      const certificate = body.certificate || null;
       const now = new Date().toISOString();
+
+      const existing = await getOrCreateProgress(userId);
 
       await ddb.send(
         new PutCommand({
@@ -215,8 +229,10 @@ export const handler = async (event) => {
             userId,
             goalWeeklyHours,
             completedWeeks,
+            taskProgress,
+            certificate,
             updatedAt: now,
-            createdAt: now
+            createdAt: existing.createdAt || now
           }
         })
       );
@@ -280,6 +296,7 @@ export const handler = async (event) => {
       }
 
       const now = new Date().toISOString();
+      const existing = await getOrCreateProgress(userId);
       await ddb.send(
         new PutCommand({
           TableName: PROGRESS_TABLE,
@@ -287,8 +304,10 @@ export const handler = async (event) => {
             userId,
             goalWeeklyHours: Number(body.progress.goalWeeklyHours || 20),
             completedWeeks: body.progress.completedWeeks,
+            taskProgress: body.progress.taskProgress || defaultTaskProgress(),
+            certificate: body.progress.certificate || null,
             updatedAt: now,
-            createdAt: now
+            createdAt: existing.createdAt || now
           }
         })
       );

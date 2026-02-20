@@ -14,6 +14,159 @@ const WEEK_DEFS = [
   { id: 12, title: "Week 12", focus: "Portfolio + interviews" }
 ];
 
+const WEEK_CONTENT = {
+  0: {
+    tasks: [
+      "Install Python, Git, VS Code and verify versions.",
+      "Learn terminal basics: pwd, ls, cd, mkdir, touch.",
+      "Create first GitHub repo and push first commit.",
+      "Run a simple Python script from terminal."
+    ],
+    refs: [
+      { label: "Week 0 Foundation", url: "week-by-week/week-0-foundation.md" },
+      { label: "Week 0 Resources", url: "resources/week-0-beginner-resources.md" }
+    ]
+  },
+  1: {
+    tasks: [
+      "Practice Python syntax with loops/functions exercises.",
+      "Read CSV/JSON files and inspect data.",
+      "Build mini notebook with basic stats.",
+      "Commit notebook with notes and examples."
+    ],
+    refs: [
+      { label: "Python Official Tutorial", url: "https://docs.python.org/3/tutorial/" },
+      { label: "12 Week Roadmap", url: "week-by-week/12-week-roadmap.md" }
+    ]
+  },
+  2: {
+    tasks: [
+      "Master SELECT, WHERE, GROUP BY, ORDER BY.",
+      "Practice joins, CTEs, and window functions.",
+      "Solve at least 50 SQL questions.",
+      "Document solutions in SQL file."
+    ],
+    refs: [
+      { label: "PostgreSQL Docs", url: "https://www.postgresql.org/docs/" },
+      { label: "SQL Practice", url: "https://www.hackerrank.com/domains/sql" }
+    ]
+  },
+  3: {
+    tasks: [
+      "Perform EDA in pandas.",
+      "Define business metrics (conversion/retention).",
+      "Create charts and summarize insights.",
+      "Publish one insights notebook."
+    ],
+    refs: [
+      { label: "Pandas Docs", url: "https://pandas.pydata.org/docs/" },
+      { label: "Roadmap Week 3", url: "week-by-week/12-week-roadmap.md" }
+    ]
+  },
+  4: {
+    tasks: [
+      "Build dashboard in Power BI/Tableau/Looker Studio.",
+      "Create KPI drill-down views.",
+      "Write one-page business summary.",
+      "Share screenshot/demo link in repo."
+    ],
+    refs: [
+      { label: "Project 1 Brief", url: "projects/project-1-analytics-dashboard.md" }
+    ]
+  },
+  5: {
+    tasks: [
+      "Design star schema with fact and dimension tables.",
+      "Map source fields to model entities.",
+      "Review OLTP vs OLAP usage.",
+      "Upload schema diagram to repo."
+    ],
+    refs: [
+      { label: "Project 2 Brief", url: "projects/project-2-batch-pipeline.md" }
+    ]
+  },
+  6: {
+    tasks: [
+      "Create ETL pipeline with extract-transform-load steps.",
+      "Add retry/error handling and logging.",
+      "Make load idempotent for reruns.",
+      "Write runbook steps in README."
+    ],
+    refs: [
+      { label: "Airflow Docs", url: "https://airflow.apache.org/docs/" },
+      { label: "Prefect Docs", url: "https://docs.prefect.io/" }
+    ]
+  },
+  7: {
+    tasks: [
+      "Create DAG/flow with dependencies.",
+      "Schedule daily run and monitor status.",
+      "Add alerts for failure cases.",
+      "Document orchestration design decisions."
+    ],
+    refs: [
+      { label: "Roadmap Week 7", url: "week-by-week/12-week-roadmap.md" }
+    ]
+  },
+  8: {
+    tasks: [
+      "Load transformed data into warehouse tables.",
+      "Implement incremental load strategy.",
+      "Optimize partitioning or clustering.",
+      "Validate table freshness and counts."
+    ],
+    refs: [
+      { label: "BigQuery Quickstart", url: "https://cloud.google.com/bigquery/docs/quickstarts" },
+      { label: "Redshift Docs", url: "https://docs.aws.amazon.com/redshift/" }
+    ]
+  },
+  9: {
+    tasks: [
+      "Set up producer and consumer for events.",
+      "Process stream records and aggregate output.",
+      "Handle delayed or malformed messages.",
+      "Write stream architecture notes."
+    ],
+    refs: [
+      { label: "Project 3 Brief", url: "projects/project-3-streaming-and-quality.md" },
+      { label: "Kafka Docs", url: "https://kafka.apache.org/documentation/" }
+    ]
+  },
+  10: {
+    tasks: [
+      "Define data quality checks (schema/null/freshness).",
+      "Implement automated validation.",
+      "Create alerting rules for failures.",
+      "Document one incident simulation."
+    ],
+    refs: [
+      { label: "Great Expectations", url: "https://docs.greatexpectations.io/" }
+    ]
+  },
+  11: {
+    tasks: [
+      "Integrate ingestion, transformation, warehouse and dashboard.",
+      "Add tests and sample datasets.",
+      "Create architecture diagram.",
+      "Prepare capstone README."
+    ],
+    refs: [
+      { label: "Capstone Week", url: "week-by-week/12-week-roadmap.md" }
+    ]
+  },
+  12: {
+    tasks: [
+      "Polish all project READMEs.",
+      "Create short project demo videos.",
+      "Prepare interview Q&A answers.",
+      "Finalize resume bullets with outcomes."
+    ],
+    refs: [
+      { label: "Interview Resources", url: "resources/free-learning-resources.md" }
+    ]
+  }
+};
+
 const setupNotice = document.getElementById("setupNotice");
 const authSection = document.getElementById("authSection");
 const appSection = document.getElementById("appSection");
@@ -51,6 +204,13 @@ const signupPane = document.getElementById("signupPane");
 const loginPane = document.getElementById("loginPane");
 const verifyPane = document.getElementById("verifyPane");
 
+const generateCertBtn = document.getElementById("generateCertBtn");
+const shareLinkedInBtn = document.getElementById("shareLinkedInBtn");
+const shareXBtn = document.getElementById("shareXBtn");
+const shareFacebookBtn = document.getElementById("shareFacebookBtn");
+const copyCertLinkBtn = document.getElementById("copyCertLinkBtn");
+const certificateCard = document.getElementById("certificateCard");
+
 const config = window.AWS_CONFIG || {};
 const hasConfig = Boolean(
   config.REGION &&
@@ -82,16 +242,8 @@ let state = {
 };
 
 function setAuthPane(pane) {
-  const panes = {
-    signup: signupPane,
-    login: loginPane,
-    verify: verifyPane
-  };
-  const tabs = {
-    signup: tabSignupBtn,
-    login: tabLoginBtn,
-    verify: tabVerifyBtn
-  };
+  const panes = { signup: signupPane, login: loginPane, verify: verifyPane };
+  const tabs = { signup: tabSignupBtn, login: tabLoginBtn, verify: tabVerifyBtn };
 
   Object.entries(panes).forEach(([key, el]) => {
     if (!el) return;
@@ -107,18 +259,34 @@ function showMessage(msg, isError = true) {
   messageEl.style.color = isError ? "#b42318" : "#00703c";
   messageEl.textContent = msg;
   setTimeout(() => {
-    if (messageEl.textContent === msg) {
-      messageEl.textContent = "";
-    }
+    if (messageEl.textContent === msg) messageEl.textContent = "";
   }, 4000);
 }
 
 function createDefaultWeeks() {
   const completed = {};
-  for (const wk of WEEK_DEFS) {
-    completed[wk.id] = false;
-  }
+  for (const wk of WEEK_DEFS) completed[wk.id] = false;
   return completed;
+}
+
+function createDefaultTaskProgress() {
+  const progress = {};
+  for (const wk of WEEK_DEFS) {
+    const len = (WEEK_CONTENT[wk.id]?.tasks || []).length;
+    progress[wk.id] = Array.from({ length: len }, () => false);
+  }
+  return progress;
+}
+
+function normalizeProgress(progress) {
+  return {
+    goalWeeklyHours: Number(progress?.goalWeeklyHours || 20),
+    completedWeeks: progress?.completedWeeks || createDefaultWeeks(),
+    taskProgress: progress?.taskProgress || createDefaultTaskProgress(),
+    certificate: progress?.certificate || null,
+    createdAt: progress?.createdAt,
+    updatedAt: progress?.updatedAt
+  };
 }
 
 function calcStreak(logs) {
@@ -150,14 +318,53 @@ function calcStreak(logs) {
 
 function calculateWeekHours(logs) {
   const hoursMap = {};
-  for (const wk of WEEK_DEFS) {
-    hoursMap[wk.id] = 0;
-  }
+  for (const wk of WEEK_DEFS) hoursMap[wk.id] = 0;
   for (const log of logs) {
     const w = Number(log.weekNo);
     hoursMap[w] = Number(hoursMap[w] || 0) + Number(log.hours || 0);
   }
   return hoursMap;
+}
+
+function isCourseComplete() {
+  const completed = state.progress.completedWeeks || createDefaultWeeks();
+  return Object.values(completed).every(Boolean);
+}
+
+function absoluteOrRepoUrl(url) {
+  if (/^https?:\/\//i.test(url)) return url;
+  return `https://github.com/codedbyabhishek/data-analytics-to-data-engineer-3-months/blob/main/${url}`;
+}
+
+function buildCertificateLink(certificate) {
+  const params = new URLSearchParams({
+    cert_id: certificate.id,
+    cert_name: certificate.learnerName,
+    cert_date: certificate.issuedAt
+  });
+  return `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+}
+
+function renderSharedCertificateViewFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const certId = params.get("cert_id");
+  const certName = params.get("cert_name");
+  const certDate = params.get("cert_date");
+  if (!certId || !certName || !certDate) return false;
+
+  document.body.innerHTML = `
+    <main class="container" style="padding-top:2rem;">
+      <section class="panel certificate-public">
+        <p class="eyebrow">Verified Achievement</p>
+        <h1 style="margin:0.2rem 0 0.6rem;">Data Analytics to Data Engineer</h1>
+        <p>This certifies that <strong>${certName}</strong> completed the 13-week learning roadmap.</p>
+        <p><strong>Certificate ID:</strong> ${certId}</p>
+        <p><strong>Issued:</strong> ${new Date(certDate).toLocaleDateString()}</p>
+        <a class="chip" href="${window.location.origin}${window.location.pathname}">Open Tracker</a>
+      </section>
+    </main>
+  `;
+  return true;
 }
 
 function populateWeekSelect() {
@@ -188,12 +395,24 @@ async function apiFetch(path, options = {}) {
 
   const text = await response.text();
   const payload = text ? JSON.parse(text) : {};
-
-  if (!response.ok) {
-    throw new Error(payload.error || `Request failed (${response.status})`);
-  }
-
+  if (!response.ok) throw new Error(payload.error || `Request failed (${response.status})`);
   return payload;
+}
+
+async function persistProgress(nextProgress) {
+  const payload = {
+    goalWeeklyHours: Number(nextProgress.goalWeeklyHours || 20),
+    completedWeeks: nextProgress.completedWeeks || createDefaultWeeks(),
+    taskProgress: nextProgress.taskProgress || createDefaultTaskProgress(),
+    certificate: nextProgress.certificate || null
+  };
+
+  const updated = await apiFetch("/progress", {
+    method: "PUT",
+    body: JSON.stringify(payload)
+  });
+
+  state.progress = normalizeProgress(updated);
 }
 
 async function loadState() {
@@ -205,7 +424,7 @@ async function loadState() {
 
   state = {
     profile,
-    progress,
+    progress: normalizeProgress(progress),
     logs: logsPayload.logs || []
   };
 }
@@ -213,56 +432,107 @@ async function loadState() {
 function renderWeeks() {
   weeksGrid.innerHTML = "";
   const completed = state.progress.completedWeeks || createDefaultWeeks();
+  const taskProgress = state.progress.taskProgress || createDefaultTaskProgress();
   const hoursMap = calculateWeekHours(state.logs);
 
   for (const wk of WEEK_DEFS) {
+    const weekContent = WEEK_CONTENT[wk.id] || { tasks: [], refs: [] };
+    const weekTasksState = taskProgress[wk.id] || Array.from({ length: weekContent.tasks.length }, () => false);
+    const doneTasks = weekTasksState.filter(Boolean).length;
+    const totalTasks = weekContent.tasks.length || 1;
+    const taskPct = Math.round((doneTasks / totalTasks) * 100);
     const isDone = Boolean(completed[wk.id]);
+
     const card = document.createElement("article");
-    card.className = `week-card ${isDone ? "done" : ""}`;
-    const safeId = `week-${wk.id}`;
+    card.className = `week-card week-expand ${isDone ? "done" : ""}`;
+
+    const tasksHtml = weekContent.tasks
+      .map(
+        (task, idx) => `
+        <label class="task-item">
+          <input type="checkbox" data-week="${wk.id}" data-task-index="${idx}" ${weekTasksState[idx] ? "checked" : ""}>
+          <span>${task}</span>
+        </label>`
+      )
+      .join("");
+
+    const refsHtml = weekContent.refs
+      .map(
+        (ref) => `<li><a href="${absoluteOrRepoUrl(ref.url)}" target="_blank" rel="noreferrer">${ref.label}</a></li>`
+      )
+      .join("");
 
     card.innerHTML = `
-      <h4>${wk.title}</h4>
-      <p class="muted">${wk.focus}</p>
-      <div class="week-line">
-        <label>
-          <input type="checkbox" id="${safeId}" ${isDone ? "checked" : ""}>
-          Completed
-        </label>
-        <span>${Number(hoursMap[wk.id] || 0)}h logged</span>
-      </div>
+      <details>
+        <summary>
+          <div class="week-summary-left">
+            <h4>${wk.title}</h4>
+            <p class="muted">${wk.focus}</p>
+          </div>
+          <div class="week-summary-right">
+            <span class="week-hours">${Number(hoursMap[wk.id] || 0)}h logged</span>
+            <span class="task-pct">${doneTasks}/${weekContent.tasks.length} tasks</span>
+          </div>
+        </summary>
+
+        <div class="week-line">
+          <label>
+            <input type="checkbox" class="week-complete-checkbox" data-week-id="${wk.id}" ${isDone ? "checked" : ""}>
+            Mark week complete
+          </label>
+          <span>${taskPct}% tasks done</span>
+        </div>
+
+        <div class="task-list">${tasksHtml}</div>
+        <div class="week-refs">
+          <p class="muted">References</p>
+          <ul>${refsHtml}</ul>
+        </div>
+      </details>
     `;
 
-    const checkbox = card.querySelector(`#${safeId}`);
-    checkbox.addEventListener("change", async (e) => {
-      const next = { ...(state.progress.completedWeeks || createDefaultWeeks()) };
-      next[wk.id] = e.target.checked;
+    weeksGrid.appendChild(card);
+  }
+
+  weeksGrid.querySelectorAll(".week-complete-checkbox").forEach((el) => {
+    el.addEventListener("change", async (e) => {
+      const wk = Number(e.target.dataset.weekId);
+      const nextCompleted = { ...(state.progress.completedWeeks || createDefaultWeeks()) };
+      nextCompleted[wk] = e.target.checked;
 
       try {
-        const updated = await apiFetch("/progress", {
-          method: "PUT",
-          body: JSON.stringify({
-            goalWeeklyHours: Number(state.progress.goalWeeklyHours || 20),
-            completedWeeks: next
-          })
-        });
-
-        state.progress = updated;
+        await persistProgress({ ...state.progress, completedWeeks: nextCompleted });
         renderStats();
+        renderWeeks();
+        renderCertificate();
+      } catch (err) {
+        showMessage(err.message);
+        e.target.checked = !e.target.checked;
+      }
+    });
+  });
+
+  weeksGrid.querySelectorAll(".task-item input[type='checkbox']").forEach((el) => {
+    el.addEventListener("change", async (e) => {
+      const wk = Number(e.target.dataset.week);
+      const idx = Number(e.target.dataset.taskIndex);
+      const nextTaskProgress = structuredClone(state.progress.taskProgress || createDefaultTaskProgress());
+      if (!Array.isArray(nextTaskProgress[wk])) nextTaskProgress[wk] = [];
+      nextTaskProgress[wk][idx] = e.target.checked;
+
+      try {
+        await persistProgress({ ...state.progress, taskProgress: nextTaskProgress });
         renderWeeks();
       } catch (err) {
         showMessage(err.message);
         e.target.checked = !e.target.checked;
       }
     });
-
-    weeksGrid.appendChild(card);
-  }
+  });
 }
 
 function renderLogs() {
   logsBody.innerHTML = "";
-
   for (const log of state.logs) {
     const tr = document.createElement("tr");
     tr.innerHTML = `
@@ -311,6 +581,34 @@ function renderStats() {
   goalStatus.textContent = `Goal: ${goal}h/week. Week 0 currently logged: ${week0Hours}h.`;
 }
 
+function renderCertificate() {
+  if (!certificateCard) return;
+
+  const canGenerate = isCourseComplete();
+  const cert = state.progress.certificate;
+  generateCertBtn.disabled = !canGenerate;
+  shareLinkedInBtn.disabled = !cert;
+  shareXBtn.disabled = !cert;
+  shareFacebookBtn.disabled = !cert;
+  copyCertLinkBtn.disabled = !cert;
+
+  if (!cert) {
+    certificateCard.classList.add("hidden");
+    return;
+  }
+
+  const certLink = buildCertificateLink(cert);
+  certificateCard.classList.remove("hidden");
+  certificateCard.innerHTML = `
+    <p class="eyebrow">Certificate Ready</p>
+    <h3>${cert.learnerName}</h3>
+    <p>Completed <strong>Data Analytics to Data Engineer</strong> roadmap.</p>
+    <p><strong>ID:</strong> ${cert.id}</p>
+    <p><strong>Issued:</strong> ${new Date(cert.issuedAt).toLocaleDateString()}</p>
+    <p><a href="${certLink}" target="_blank" rel="noreferrer">Open public certificate</a></p>
+  `;
+}
+
 function renderApp(user) {
   const fullName = state.profile.fullName || user.attributes.name || user.attributes.email;
   welcomeText.textContent = `Welcome, ${fullName}`;
@@ -320,6 +618,7 @@ function renderApp(user) {
   renderStats();
   renderWeeks();
   renderLogs();
+  renderCertificate();
 }
 
 async function renderAuthState() {
@@ -368,10 +667,7 @@ signupForm.addEventListener("submit", async (e) => {
     const result = await AuthApi.signUp({
       username: email,
       password,
-      attributes: {
-        email,
-        name: fullName
-      }
+      attributes: { email, name: fullName }
     });
 
     signupForm.reset();
@@ -473,19 +769,67 @@ saveGoalBtn.addEventListener("click", async () => {
   }
 
   try {
-    const updated = await apiFetch("/progress", {
-      method: "PUT",
-      body: JSON.stringify({
-        goalWeeklyHours: goal,
-        completedWeeks: state.progress.completedWeeks || createDefaultWeeks()
-      })
-    });
-
-    state.progress = updated;
+    await persistProgress({ ...state.progress, goalWeeklyHours: goal });
     renderStats();
     showMessage("Goal updated.", false);
   } catch (err) {
     showMessage(err.message);
+  }
+});
+
+generateCertBtn?.addEventListener("click", async () => {
+  if (!isCourseComplete()) {
+    showMessage("Complete all weeks before generating certificate.");
+    return;
+  }
+
+  const learnerName = state.profile.fullName || "Learner";
+  const cert = {
+    id: `DADE-${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
+    learnerName,
+    issuedAt: new Date().toISOString()
+  };
+
+  try {
+    await persistProgress({ ...state.progress, certificate: cert });
+    renderCertificate();
+    showMessage("Certificate generated.", false);
+  } catch (err) {
+    showMessage(err.message);
+  }
+});
+
+shareLinkedInBtn?.addEventListener("click", () => {
+  const cert = state.progress.certificate;
+  if (!cert) return;
+  const url = buildCertificateLink(cert);
+  window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, "_blank");
+});
+
+shareXBtn?.addEventListener("click", () => {
+  const cert = state.progress.certificate;
+  if (!cert) return;
+  const url = buildCertificateLink(cert);
+  const text = "I completed the Data Analytics to Data Engineer 13-week roadmap.";
+  window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, "_blank");
+});
+
+shareFacebookBtn?.addEventListener("click", () => {
+  const cert = state.progress.certificate;
+  if (!cert) return;
+  const url = buildCertificateLink(cert);
+  window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, "_blank");
+});
+
+copyCertLinkBtn?.addEventListener("click", async () => {
+  const cert = state.progress.certificate;
+  if (!cert) return;
+  const url = buildCertificateLink(cert);
+  try {
+    await navigator.clipboard.writeText(url);
+    showMessage("Certificate link copied.", false);
+  } catch {
+    showMessage("Could not copy link.");
   }
 });
 
@@ -535,7 +879,7 @@ importInput.addEventListener("change", async (e) => {
     });
 
     await loadState();
-    const user = await amplify.Auth.currentAuthenticatedUser();
+    const user = await AuthApi.currentAuthenticatedUser();
     renderApp(user);
     showMessage("Data imported successfully.", false);
   } catch (err) {
@@ -561,4 +905,7 @@ openSignupBtn?.addEventListener("click", () => {
 tabLoginBtn?.addEventListener("click", () => setAuthPane("login"));
 tabSignupBtn?.addEventListener("click", () => setAuthPane("signup"));
 tabVerifyBtn?.addEventListener("click", () => setAuthPane("verify"));
-renderAuthState();
+
+if (!renderSharedCertificateViewFromUrl()) {
+  renderAuthState();
+}
