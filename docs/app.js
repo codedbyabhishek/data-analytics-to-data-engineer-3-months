@@ -1,88 +1,34 @@
 const DEFAULT_COURSE_ID = "analytics-to-de";
+const CATALOG_STORAGE_KEY = "dj_course_catalog_v1";
 
-const COURSES = [
-  {
-    id: "analytics-to-de",
-    title: "Data Analytics to Data Engineer",
-    subtitle: "Zero to Professional in 12 Weeks",
-    weeks: [
-      { id: 0, title: "Week 0", focus: "Terminal + Git + Python setup" },
-      { id: 1, title: "Week 1", focus: "Python basics" },
-      { id: 2, title: "Week 2", focus: "SQL fundamentals" },
-      { id: 3, title: "Week 3", focus: "EDA + metrics" },
-      { id: 4, title: "Week 4", focus: "Dashboard storytelling" },
-      { id: 5, title: "Week 5", focus: "Data modeling" },
-      { id: 6, title: "Week 6", focus: "ETL design" },
-      { id: 7, title: "Week 7", focus: "Orchestration" },
-      { id: 8, title: "Week 8", focus: "Warehouse loading" },
-      { id: 9, title: "Week 9", focus: "Streaming basics" },
-      { id: 10, title: "Week 10", focus: "Quality + monitoring" },
-      { id: 11, title: "Week 11", focus: "Capstone build" },
-      { id: 12, title: "Week 12", focus: "Portfolio + interviews" }
-    ]
-  },
-  {
-    id: "data-science-foundations",
-    title: "Data Science Foundations",
-    subtitle: "Math, ML basics, and model storytelling",
-    weeks: [
-      { id: 1, title: "Week 1", focus: "Python + NumPy" },
-      { id: 2, title: "Week 2", focus: "Pandas + cleaning" },
-      { id: 3, title: "Week 3", focus: "Statistics essentials" },
-      { id: 4, title: "Week 4", focus: "Visualization + EDA" },
-      { id: 5, title: "Week 5", focus: "Supervised ML basics" },
-      { id: 6, title: "Week 6", focus: "Model evaluation" },
-      { id: 7, title: "Week 7", focus: "Feature engineering" },
-      { id: 8, title: "Week 8", focus: "Unsupervised learning" },
-      { id: 9, title: "Week 9", focus: "Model tuning" },
-      { id: 10, title: "Week 10", focus: "Mini ML project" },
-      { id: 11, title: "Week 11", focus: "Deployment basics" },
-      { id: 12, title: "Week 12", focus: "Portfolio + case study" }
-    ]
-  },
-  {
-    id: "business-analytics-pro",
-    title: "Business Analytics Professional",
-    subtitle: "Metrics, dashboards, and decision storytelling",
-    weeks: [
-      { id: 1, title: "Week 1", focus: "Business metrics foundations" },
-      { id: 2, title: "Week 2", focus: "SQL for analytics" },
-      { id: 3, title: "Week 3", focus: "Data cleaning workflow" },
-      { id: 4, title: "Week 4", focus: "KPI tree design" },
-      { id: 5, title: "Week 5", focus: "Dashboard UX" },
-      { id: 6, title: "Week 6", focus: "A/B testing basics" },
-      { id: 7, title: "Week 7", focus: "Cohort analysis" },
-      { id: 8, title: "Week 8", focus: "Forecasting basics" },
-      { id: 9, title: "Week 9", focus: "Stakeholder reporting" },
-      { id: 10, title: "Week 10", focus: "Executive presentation" },
-      { id: 11, title: "Week 11", focus: "End-to-end case project" },
-      { id: 12, title: "Week 12", focus: "Portfolio + interview prep" }
-    ]
-  }
-];
-
-const COURSE_MAP = Object.fromEntries(COURSES.map((c) => [c.id, c]));
-
-function makeWeekContent(course) {
-  const content = {};
-  for (const week of course.weeks) {
-    content[week.id] = {
-      tasks: [
-        `Complete core study module for ${week.title}.`,
-        `Practice at least 60 minutes on ${week.focus}.`,
-        "Build one small hands-on task and commit to GitHub.",
-        "Write weekly summary and next-week plan."
-      ],
-      refs: [
-        { label: `${course.title} roadmap`, url: "week-by-week/12-week-roadmap.md" },
-        { label: "Free learning resources", url: "resources/free-learning-resources.md" }
+const FALLBACK_CATALOG = {
+  version: 1,
+  courses: [
+    {
+      id: "analytics-to-de",
+      title: "Data Analytics to Data Engineer",
+      subtitle: "Zero to Professional in 12 Weeks",
+      weeks: [
+        {
+          id: 0,
+          title: "Week 0",
+          focus: "Terminal + Git + Python setup",
+          tasks: [
+            "Install Python, Git, VS Code and verify versions.",
+            "Learn terminal basics: pwd, ls, cd, mkdir, touch.",
+            "Create first GitHub repo and push first commit.",
+            "Run a simple Python script from terminal."
+          ],
+          references: [{ label: "Week 0 Foundation", url: "week-by-week/week-0-foundation.md" }]
+        }
       ]
-    };
-  }
-  return content;
-}
+    }
+  ]
+};
 
-const COURSE_CONTENT = Object.fromEntries(COURSES.map((c) => [c.id, makeWeekContent(c)]));
+let CATALOG = FALLBACK_CATALOG;
+let COURSES = FALLBACK_CATALOG.courses;
+let COURSE_MAP = Object.fromEntries(COURSES.map((c) => [c.id, c]));
 
 const setupNotice = document.getElementById("setupNotice");
 const authSection = document.getElementById("authSection");
@@ -129,10 +75,14 @@ const shareFacebookBtn = document.getElementById("shareFacebookBtn");
 const copyCertLinkBtn = document.getElementById("copyCertLinkBtn");
 const certificateCard = document.getElementById("certificateCard");
 
+const loadConfigBtn = document.getElementById("loadConfigBtn");
+const applyConfigBtn = document.getElementById("applyConfigBtn");
+const exportConfigBtn = document.getElementById("exportConfigBtn");
+const resetConfigBtn = document.getElementById("resetConfigBtn");
+const configEditor = document.getElementById("configEditor");
+
 const config = window.AWS_CONFIG || {};
-const hasConfig = Boolean(
-  config.REGION && config.USER_POOL_ID && config.USER_POOL_CLIENT_ID && config.API_BASE_URL
-);
+const hasConfig = Boolean(config.REGION && config.USER_POOL_ID && config.USER_POOL_CLIENT_ID && config.API_BASE_URL);
 
 const amplifyGlobal = window.aws_amplify || {};
 const AmplifyApi = amplifyGlobal.Amplify || window.Amplify || null;
@@ -157,35 +107,117 @@ let state = {
   activeCourseId: DEFAULT_COURSE_ID
 };
 
+function showMessage(msg, isError = true) {
+  messageEl.style.color = isError ? "#b42318" : "#00703c";
+  messageEl.textContent = msg;
+  setTimeout(() => {
+    if (messageEl.textContent === msg) messageEl.textContent = "";
+  }, 4000);
+}
+
+function validateCatalogShape(catalog) {
+  if (!catalog || typeof catalog !== "object") return "Catalog must be an object.";
+  if (!Array.isArray(catalog.courses) || !catalog.courses.length) return "Catalog must include a non-empty courses array.";
+
+  const ids = new Set();
+  for (const course of catalog.courses) {
+    if (!course.id || !course.title || !Array.isArray(course.weeks)) return "Each course requires id, title, and weeks array.";
+    if (ids.has(course.id)) return `Duplicate course id: ${course.id}`;
+    ids.add(course.id);
+    for (const week of course.weeks) {
+      if (typeof week.id !== "number" || !week.title || !week.focus) {
+        return `Course ${course.id} has invalid week entry.`;
+      }
+      if (!Array.isArray(week.tasks)) return `Course ${course.id} week ${week.id} requires tasks array.`;
+      if (!Array.isArray(week.references)) return `Course ${course.id} week ${week.id} requires references array.`;
+    }
+  }
+  return "";
+}
+
+function applyCatalog(catalog, persist = false) {
+  const err = validateCatalogShape(catalog);
+  if (err) throw new Error(err);
+
+  CATALOG = catalog;
+  COURSES = catalog.courses;
+  COURSE_MAP = Object.fromEntries(COURSES.map((c) => [c.id, c]));
+
+  if (persist) localStorage.setItem(CATALOG_STORAGE_KEY, JSON.stringify(catalog));
+
+  if (!COURSE_MAP[state.activeCourseId]) state.activeCourseId = COURSES[0].id;
+  if (state.progress) {
+    const next = structuredClone(state.progress);
+    for (const course of COURSES) {
+      if (!next.courses[course.id]) next.courses[course.id] = createCourseProgress(course.id);
+    }
+    state.progress = next;
+  }
+}
+
+async function loadCatalog() {
+  const local = localStorage.getItem(CATALOG_STORAGE_KEY);
+  if (local) {
+    try {
+      applyCatalog(JSON.parse(local));
+      return;
+    } catch {
+      localStorage.removeItem(CATALOG_STORAGE_KEY);
+    }
+  }
+
+  try {
+    const res = await fetch(`courses/catalog.json?v=${Date.now()}`);
+    const remote = await res.json();
+    applyCatalog(remote);
+  } catch {
+    applyCatalog(FALLBACK_CATALOG);
+  }
+}
+
 function getActiveCourse() {
-  return COURSE_MAP[state.activeCourseId] || COURSE_MAP[DEFAULT_COURSE_ID];
+  return COURSE_MAP[state.activeCourseId] || COURSES[0];
+}
+
+function setAuthPane(pane) {
+  const panes = { signup: signupPane, login: loginPane, verify: verifyPane };
+  const tabs = { signup: tabSignupBtn, login: tabLoginBtn, verify: tabVerifyBtn };
+  Object.entries(panes).forEach(([k, el]) => el && el.classList.toggle("hidden", k !== pane));
+  Object.entries(tabs).forEach(([k, el]) => el && el.classList.toggle("active", k === pane));
+}
+
+function defaultCompletedWeeks(courseId) {
+  const completed = {};
+  const course = COURSE_MAP[courseId] || COURSES[0];
+  for (const week of course.weeks) completed[week.id] = false;
+  return completed;
+}
+
+function defaultTaskProgress(courseId) {
+  const taskProgress = {};
+  const course = COURSE_MAP[courseId] || COURSES[0];
+  for (const week of course.weeks) taskProgress[week.id] = Array.from({ length: week.tasks.length }, () => false);
+  return taskProgress;
 }
 
 function createCourseProgress(courseId) {
-  const course = COURSE_MAP[courseId] || COURSE_MAP[DEFAULT_COURSE_ID];
-  const completedWeeks = {};
-  const taskProgress = {};
-  for (const week of course.weeks) {
-    completedWeeks[week.id] = false;
-    taskProgress[week.id] = Array.from({ length: (COURSE_CONTENT[course.id]?.[week.id]?.tasks || []).length }, () => false);
-  }
   return {
     goalWeeklyHours: 20,
-    completedWeeks,
-    taskProgress,
+    completedWeeks: defaultCompletedWeeks(courseId),
+    taskProgress: defaultTaskProgress(courseId),
     certificate: null
   };
 }
 
 function defaultCoursesProgress() {
-  const result = {};
-  for (const course of COURSES) result[course.id] = createCourseProgress(course.id);
-  return result;
+  const courses = {};
+  for (const course of COURSES) courses[course.id] = createCourseProgress(course.id);
+  return courses;
 }
 
 function normalizeProgress(progress) {
   if (!progress || typeof progress !== "object") {
-    return { activeCourseId: DEFAULT_COURSE_ID, courses: defaultCoursesProgress() };
+    return { activeCourseId: COURSES[0].id, courses: defaultCoursesProgress() };
   }
 
   if (progress.courses && progress.activeCourseId) {
@@ -201,7 +233,7 @@ function normalizeProgress(progress) {
       };
     }
     return {
-      activeCourseId: COURSE_MAP[progress.activeCourseId] ? progress.activeCourseId : DEFAULT_COURSE_ID,
+      activeCourseId: COURSE_MAP[progress.activeCourseId] ? progress.activeCourseId : COURSES[0].id,
       courses
     };
   }
@@ -218,24 +250,7 @@ function normalizeProgress(progress) {
 }
 
 function activeCourseProgress() {
-  const cp = state.progress?.courses?.[state.activeCourseId];
-  return cp || createCourseProgress(state.activeCourseId);
-}
-
-function setAuthPane(pane) {
-  const panes = { signup: signupPane, login: loginPane, verify: verifyPane };
-  const tabs = { signup: tabSignupBtn, login: tabLoginBtn, verify: tabVerifyBtn };
-
-  Object.entries(panes).forEach(([key, el]) => el && el.classList.toggle("hidden", key !== pane));
-  Object.entries(tabs).forEach(([key, el]) => el && el.classList.toggle("active", key === pane));
-}
-
-function showMessage(msg, isError = true) {
-  messageEl.style.color = isError ? "#b42318" : "#00703c";
-  messageEl.textContent = msg;
-  setTimeout(() => {
-    if (messageEl.textContent === msg) messageEl.textContent = "";
-  }, 4000);
+  return state.progress?.courses?.[state.activeCourseId] || createCourseProgress(state.activeCourseId);
 }
 
 function calcStreak(logs) {
@@ -243,6 +258,7 @@ function calcStreak(logs) {
   const daySet = new Set(logs.map((l) => l.logDate));
   const date = new Date();
   let streak = 0;
+
   while (true) {
     const d = date.toISOString().split("T")[0];
     if (!daySet.has(d)) {
@@ -282,6 +298,7 @@ async function apiFetch(path, options = {}) {
       ...(options.headers || {})
     }
   });
+
   const text = await response.text();
   const payload = text ? JSON.parse(text) : {};
   if (!response.ok) throw new Error(payload.error || `Request failed (${response.status})`);
@@ -322,24 +339,21 @@ function renderSharedCertificateViewFromUrl() {
   return true;
 }
 
-async function loadState() {
-  const [profile, progressRaw] = await Promise.all([apiFetch("/profile"), apiFetch("/progress")]);
-  state.profile = profile;
-  state.progress = normalizeProgress(progressRaw);
-  state.activeCourseId = state.progress.activeCourseId || DEFAULT_COURSE_ID;
-  await loadLogsForActiveCourse();
-}
-
 async function loadLogsForActiveCourse() {
   const logsPayload = await apiFetch(`/logs?courseId=${encodeURIComponent(state.activeCourseId)}`);
   state.logs = logsPayload.logs || [];
 }
 
+async function loadState() {
+  const [profile, progressRaw] = await Promise.all([apiFetch("/profile"), apiFetch("/progress")]);
+  state.profile = profile;
+  state.progress = normalizeProgress(progressRaw);
+  state.activeCourseId = state.progress.activeCourseId || COURSES[0].id;
+  await loadLogsForActiveCourse();
+}
+
 async function persistProgress(nextProgress) {
-  const payload = {
-    activeCourseId: state.activeCourseId,
-    courses: nextProgress.courses
-  };
+  const payload = { activeCourseId: state.activeCourseId, courses: nextProgress.courses };
   const updated = await apiFetch("/progress", { method: "PUT", body: JSON.stringify(payload) });
   state.progress = normalizeProgress(updated);
 }
@@ -358,22 +372,27 @@ function populateCourseSelect() {
 function populateWeekSelect() {
   const course = getActiveCourse();
   logWeek.innerHTML = "";
-  for (const wk of course.weeks) {
+  for (const week of course.weeks) {
     const opt = document.createElement("option");
-    opt.value = String(wk.id);
-    opt.textContent = `${wk.title} - ${wk.focus}`;
+    opt.value = String(week.id);
+    opt.textContent = `${week.title} - ${week.focus}`;
     logWeek.appendChild(opt);
   }
 }
 
 function calculateWeekHours(logs) {
   const map = {};
-  for (const wk of getActiveCourse().weeks) map[wk.id] = 0;
+  for (const week of getActiveCourse().weeks) map[week.id] = 0;
   for (const log of logs) {
-    const w = Number(log.weekNo);
-    map[w] = Number(map[w] || 0) + Number(log.hours || 0);
+    const id = Number(log.weekNo);
+    map[id] = Number(map[id] || 0) + Number(log.hours || 0);
   }
   return map;
+}
+
+function isCourseComplete() {
+  const cp = activeCourseProgress();
+  return getActiveCourse().weeks.every((w) => Boolean(cp.completedWeeks[w.id]));
 }
 
 function renderWeeks() {
@@ -381,15 +400,12 @@ function renderWeeks() {
   const course = getActiveCourse();
   const cp = activeCourseProgress();
   const hoursMap = calculateWeekHours(state.logs);
-  const content = COURSE_CONTENT[course.id] || {};
 
-  for (const wk of course.weeks) {
-    const weekTasks = content[wk.id]?.tasks || [];
-    const weekRefs = content[wk.id]?.refs || [];
-    const taskState = cp.taskProgress[wk.id] || Array.from({ length: weekTasks.length }, () => false);
+  for (const week of course.weeks) {
+    const taskState = cp.taskProgress[week.id] || Array.from({ length: week.tasks.length }, () => false);
     const doneTasks = taskState.filter(Boolean).length;
-    const isDone = Boolean(cp.completedWeeks[wk.id]);
-    const taskPct = Math.round((doneTasks / Math.max(1, weekTasks.length)) * 100);
+    const taskPct = Math.round((doneTasks / Math.max(1, week.tasks.length)) * 100);
+    const isDone = Boolean(cp.completedWeeks[week.id]);
 
     const card = document.createElement("article");
     card.className = `week-card week-expand ${isDone ? "done" : ""}`;
@@ -398,28 +414,28 @@ function renderWeeks() {
       <details>
         <summary>
           <div class="week-summary-left">
-            <h4>${wk.title}</h4>
-            <p class="muted">${wk.focus}</p>
+            <h4>${week.title}</h4>
+            <p class="muted">${week.focus}</p>
           </div>
           <div class="week-summary-right">
-            <span class="week-hours">${Number(hoursMap[wk.id] || 0)}h logged</span>
-            <span class="task-pct">${doneTasks}/${weekTasks.length} tasks</span>
+            <span class="week-hours">${Number(hoursMap[week.id] || 0)}h logged</span>
+            <span class="task-pct">${doneTasks}/${week.tasks.length} tasks</span>
           </div>
         </summary>
 
         <div class="week-line">
           <label>
-            <input type="checkbox" class="week-complete-checkbox" data-week-id="${wk.id}" ${isDone ? "checked" : ""}>
+            <input type="checkbox" class="week-complete-checkbox" data-week-id="${week.id}" ${isDone ? "checked" : ""}>
             Mark week complete
           </label>
           <span>${taskPct}% tasks done</span>
         </div>
 
         <div class="task-list">
-          ${weekTasks
+          ${week.tasks
             .map(
               (task, idx) =>
-                `<label class="task-item"><input type="checkbox" data-week="${wk.id}" data-task-index="${idx}" ${taskState[idx] ? "checked" : ""}><span>${task}</span></label>`
+                `<label class="task-item"><input type="checkbox" data-week="${week.id}" data-task-index="${idx}" ${taskState[idx] ? "checked" : ""}><span>${task}</span></label>`
             )
             .join("")}
         </div>
@@ -427,7 +443,7 @@ function renderWeeks() {
         <div class="week-refs">
           <p class="muted">References</p>
           <ul>
-            ${weekRefs
+            ${week.references
               .map((ref) => `<li><a href="${absoluteOrRepoUrl(ref.url)}" target="_blank" rel="noreferrer">${ref.label}</a></li>`)
               .join("")}
           </ul>
@@ -440,9 +456,9 @@ function renderWeeks() {
 
   weeksGrid.querySelectorAll(".week-complete-checkbox").forEach((el) => {
     el.addEventListener("change", async (e) => {
-      const weekId = Number(e.target.dataset.weekId);
+      const id = Number(e.target.dataset.weekId);
       const next = structuredClone(state.progress);
-      next.courses[state.activeCourseId].completedWeeks[weekId] = e.target.checked;
+      next.courses[state.activeCourseId].completedWeeks[id] = e.target.checked;
       try {
         await persistProgress(next);
         renderStats();
@@ -507,29 +523,23 @@ function renderLogs() {
 }
 
 function renderStats() {
-  const course = getActiveCourse();
   const cp = activeCourseProgress();
-  const done = Object.values(cp.completedWeeks || {}).filter(Boolean).length;
-  const totalWeeksCount = course.weeks.length;
-  const percent = Math.round((done / Math.max(1, totalWeeksCount)) * 100);
+  const weeks = getActiveCourse().weeks;
+  const done = weeks.filter((w) => cp.completedWeeks[w.id]).length;
+  const totalWeeksCount = weeks.length;
+  const pct = Math.round((done / Math.max(1, totalWeeksCount)) * 100);
   const total = state.logs.reduce((sum, l) => sum + Number(l.hours), 0);
   const streak = calcStreak(state.logs);
 
-  completionPct.textContent = `${percent}%`;
-  completionBar.style.width = `${percent}%`;
+  completionPct.textContent = `${pct}%`;
+  completionBar.style.width = `${pct}%`;
   totalHours.textContent = String(total);
   streakCount.textContent = `${streak} day${streak === 1 ? "" : "s"}`;
   weeksDone.textContent = `${done} / ${totalWeeksCount}`;
 
-  const firstWeekId = course.weeks[0]?.id;
+  const firstWeek = weeks[0];
   const hoursMap = calculateWeekHours(state.logs);
-  goalStatus.textContent = `Goal: ${cp.goalWeeklyHours}h/week. ${course.weeks[0]?.title || "Current week"} logged: ${hoursMap[firstWeekId] || 0}h.`;
-}
-
-function isCourseComplete() {
-  const cp = activeCourseProgress();
-  const course = getActiveCourse();
-  return course.weeks.every((w) => Boolean(cp.completedWeeks[w.id]));
+  goalStatus.textContent = `Goal: ${cp.goalWeeklyHours}h/week. ${firstWeek.title} logged: ${hoursMap[firstWeek.id] || 0}h.`;
 }
 
 function renderCertificate() {
@@ -611,21 +621,16 @@ async function renderAuthState() {
 courseSelect?.addEventListener("change", async () => {
   const nextCourseId = courseSelect.value;
   if (!COURSE_MAP[nextCourseId]) return;
-  state.activeCourseId = nextCourseId;
 
-  const nextProgress = structuredClone(state.progress);
-  nextProgress.activeCourseId = nextCourseId;
-  if (!nextProgress.courses[nextCourseId]) nextProgress.courses[nextCourseId] = createCourseProgress(nextCourseId);
+  state.activeCourseId = nextCourseId;
+  const next = structuredClone(state.progress);
+  next.activeCourseId = nextCourseId;
+  if (!next.courses[nextCourseId]) next.courses[nextCourseId] = createCourseProgress(nextCourseId);
 
   try {
-    await persistProgress(nextProgress);
+    await persistProgress(next);
     await loadLogsForActiveCourse();
-    populateWeekSelect();
-    goalHours.value = activeCourseProgress().goalWeeklyHours;
-    renderStats();
-    renderWeeks();
-    renderLogs();
-    renderCertificate();
+    renderApp(await AuthApi.currentAuthenticatedUser());
     showMessage(`Switched to ${COURSE_MAP[nextCourseId].title}.`, false);
   } catch (err) {
     showMessage(err.message);
@@ -775,8 +780,7 @@ generateCertBtn?.addEventListener("click", async () => {
 shareLinkedInBtn?.addEventListener("click", () => {
   const cert = activeCourseProgress().certificate;
   if (!cert) return;
-  const url = buildCertificateLink(cert, state.activeCourseId);
-  window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, "_blank");
+  window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(buildCertificateLink(cert, state.activeCourseId))}`, "_blank");
 });
 
 shareXBtn?.addEventListener("click", () => {
@@ -790,16 +794,14 @@ shareXBtn?.addEventListener("click", () => {
 shareFacebookBtn?.addEventListener("click", () => {
   const cert = activeCourseProgress().certificate;
   if (!cert) return;
-  const url = buildCertificateLink(cert, state.activeCourseId);
-  window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, "_blank");
+  window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(buildCertificateLink(cert, state.activeCourseId))}`, "_blank");
 });
 
 copyCertLinkBtn?.addEventListener("click", async () => {
   const cert = activeCourseProgress().certificate;
   if (!cert) return;
-  const url = buildCertificateLink(cert, state.activeCourseId);
   try {
-    await navigator.clipboard.writeText(url);
+    await navigator.clipboard.writeText(buildCertificateLink(cert, state.activeCourseId));
     showMessage("Certificate link copied.", false);
   } catch {
     showMessage("Could not copy link.");
@@ -811,16 +813,12 @@ exportBtn.addEventListener("click", async () => {
 
   try {
     const allLogs = await apiFetch("/logs");
-    const payload = JSON.stringify(
-      {
-        exportedAt: new Date().toISOString(),
-        profile: state.profile,
-        progress: state.progress,
-        logs: allLogs.logs || []
-      },
-      null,
-      2
-    );
+    const payload = JSON.stringify({
+      exportedAt: new Date().toISOString(),
+      profile: state.profile,
+      progress: state.progress,
+      logs: allLogs.logs || []
+    }, null, 2);
 
     const blob = new Blob([payload], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -840,16 +838,12 @@ importInput.addEventListener("change", async (e) => {
   if (!file) return;
 
   try {
-    const text = await file.text();
-    const imported = JSON.parse(text);
-    if (!imported.progress || !Array.isArray(imported.logs)) {
-      throw new Error("Invalid import file format.");
-    }
+    const imported = JSON.parse(await file.text());
+    if (!imported.progress || !Array.isArray(imported.logs)) throw new Error("Invalid import file format.");
 
     await apiFetch("/import", { method: "POST", body: JSON.stringify(imported) });
     await loadState();
-    const user = await AuthApi.currentAuthenticatedUser();
-    renderApp(user);
+    renderApp(await AuthApi.currentAuthenticatedUser());
     showMessage("Data imported successfully.", false);
   } catch (err) {
     showMessage(err.message || "Could not import file.");
@@ -858,10 +852,59 @@ importInput.addEventListener("change", async (e) => {
   importInput.value = "";
 });
 
-populateCourseSelect();
-populateWeekSelect();
-document.getElementById("logDate").value = new Date().toISOString().split("T")[0];
-setAuthPane("login");
+loadConfigBtn?.addEventListener("click", () => {
+  configEditor.value = JSON.stringify(CATALOG, null, 2);
+  showMessage("Loaded current course config into editor.", false);
+});
+
+applyConfigBtn?.addEventListener("click", async () => {
+  try {
+    const parsed = JSON.parse(configEditor.value || "{}");
+    applyCatalog(parsed, true);
+
+    if (state.progress) {
+      const next = normalizeProgress(state.progress);
+      next.activeCourseId = COURSE_MAP[state.activeCourseId] ? state.activeCourseId : COURSES[0].id;
+      state.progress = next;
+      await persistProgress(next);
+      await loadLogsForActiveCourse();
+      renderApp(await AuthApi.currentAuthenticatedUser());
+    }
+
+    showMessage("Course catalog applied successfully.", false);
+  } catch (err) {
+    showMessage(err.message || "Invalid course catalog JSON.");
+  }
+});
+
+exportConfigBtn?.addEventListener("click", () => {
+  const blob = new Blob([JSON.stringify(CATALOG, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "course-catalog.json";
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+resetConfigBtn?.addEventListener("click", async () => {
+  localStorage.removeItem(CATALOG_STORAGE_KEY);
+  await loadCatalog();
+  configEditor.value = JSON.stringify(CATALOG, null, 2);
+
+  if (state.progress) {
+    const next = normalizeProgress(state.progress);
+    state.activeCourseId = COURSE_MAP[state.activeCourseId] ? state.activeCourseId : COURSES[0].id;
+    next.activeCourseId = state.activeCourseId;
+    state.progress = next;
+    await persistProgress(next);
+    await loadLogsForActiveCourse();
+    renderApp(await AuthApi.currentAuthenticatedUser());
+  }
+
+  showMessage("Reset to default catalog from file.", false);
+});
+
 openLoginBtn?.addEventListener("click", () => {
   authSection.classList.remove("hidden");
   setAuthPane("login");
@@ -876,6 +919,14 @@ tabLoginBtn?.addEventListener("click", () => setAuthPane("login"));
 tabSignupBtn?.addEventListener("click", () => setAuthPane("signup"));
 tabVerifyBtn?.addEventListener("click", () => setAuthPane("verify"));
 
-if (!renderSharedCertificateViewFromUrl()) {
-  renderAuthState();
-}
+document.getElementById("logDate").value = new Date().toISOString().split("T")[0];
+setAuthPane("login");
+
+(async () => {
+  await loadCatalog();
+  configEditor.value = JSON.stringify(CATALOG, null, 2);
+
+  if (!renderSharedCertificateViewFromUrl()) {
+    await renderAuthState();
+  }
+})();

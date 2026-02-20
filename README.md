@@ -53,16 +53,19 @@ Week 0 checklist here: [`templates/week-0-daily-checklist.md`](templates/week-0-
 - Website source: [`docs/index.html`](docs/index.html)
 - Features:
   - Real account auth (AWS Cognito email/password)
+  - Multi-course learning paths (course switcher)
   - Track Week 0 to Week 12 completion
   - Add daily learning logs with hours
   - View completion %, total hours, and streak
   - Set weekly hour goal
   - Export/import your progress data from cloud account
+  - JSON-based course configuration admin editor
 
 Important:
 - Configure AWS first using [`docs/aws-setup.md`](docs/aws-setup.md).
 - Add AWS values in [`docs/aws-config.js`](docs/aws-config.js) using [`docs/aws-config.example.js`](docs/aws-config.example.js).
 - Backend infrastructure and API code are in [`aws/template.yaml`](aws/template.yaml) and [`aws/lambda/index.mjs`](aws/lambda/index.mjs).
+- Default course catalog file: [`docs/courses/catalog.json`](docs/courses/catalog.json).
 
 ## Projects You Will Build
 1. Analytics Dashboard with KPI storytelling

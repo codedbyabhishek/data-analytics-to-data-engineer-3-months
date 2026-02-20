@@ -1,0 +1,239 @@
+{
+  "version": 1,
+  "courses": [
+    {
+      "id": "analytics-to-de",
+      "title": "Data Analytics to Data Engineer",
+      "subtitle": "Zero to Professional in 12 Weeks",
+      "weeks": [
+        {
+          "id": 0,
+          "title": "Week 0",
+          "focus": "Terminal + Git + Python setup",
+          "tasks": [
+            "Install Python, Git, VS Code and verify versions.",
+            "Learn terminal basics: pwd, ls, cd, mkdir, touch.",
+            "Create first GitHub repo and push first commit.",
+            "Run a simple Python script from terminal."
+          ],
+          "references": [
+            { "label": "Week 0 Foundation", "url": "week-by-week/week-0-foundation.md" },
+            { "label": "Week 0 Resources", "url": "resources/week-0-beginner-resources.md" }
+          ]
+        },
+        {
+          "id": 1,
+          "title": "Week 1",
+          "focus": "Python basics",
+          "tasks": [
+            "Practice Python syntax with loops/functions exercises.",
+            "Read CSV/JSON files and inspect data.",
+            "Build mini notebook with basic stats.",
+            "Commit notebook with notes and examples."
+          ],
+          "references": [
+            { "label": "Python Official Tutorial", "url": "https://docs.python.org/3/tutorial/" },
+            { "label": "12 Week Roadmap", "url": "week-by-week/12-week-roadmap.md" }
+          ]
+        },
+        {
+          "id": 2,
+          "title": "Week 2",
+          "focus": "SQL fundamentals",
+          "tasks": [
+            "Master SELECT, WHERE, GROUP BY, ORDER BY.",
+            "Practice joins, CTEs, and window functions.",
+            "Solve at least 50 SQL questions.",
+            "Document solutions in SQL file."
+          ],
+          "references": [
+            { "label": "PostgreSQL Docs", "url": "https://www.postgresql.org/docs/" },
+            { "label": "SQL Practice", "url": "https://www.hackerrank.com/domains/sql" }
+          ]
+        },
+        {
+          "id": 3,
+          "title": "Week 3",
+          "focus": "EDA + metrics",
+          "tasks": [
+            "Perform EDA in pandas.",
+            "Define business metrics (conversion/retention).",
+            "Create charts and summarize insights.",
+            "Publish one insights notebook."
+          ],
+          "references": [
+            { "label": "Pandas Docs", "url": "https://pandas.pydata.org/docs/" },
+            { "label": "Roadmap Week 3", "url": "week-by-week/12-week-roadmap.md" }
+          ]
+        },
+        {
+          "id": 4,
+          "title": "Week 4",
+          "focus": "Dashboard storytelling",
+          "tasks": [
+            "Build dashboard in Power BI/Tableau/Looker Studio.",
+            "Create KPI drill-down views.",
+            "Write one-page business summary.",
+            "Share screenshot/demo link in repo."
+          ],
+          "references": [
+            { "label": "Project 1 Brief", "url": "projects/project-1-analytics-dashboard.md" }
+          ]
+        },
+        {
+          "id": 5,
+          "title": "Week 5",
+          "focus": "Data modeling",
+          "tasks": [
+            "Design star schema with fact and dimension tables.",
+            "Map source fields to model entities.",
+            "Review OLTP vs OLAP usage.",
+            "Upload schema diagram to repo."
+          ],
+          "references": [
+            { "label": "Project 2 Brief", "url": "projects/project-2-batch-pipeline.md" }
+          ]
+        },
+        {
+          "id": 6,
+          "title": "Week 6",
+          "focus": "ETL design",
+          "tasks": [
+            "Create ETL pipeline with extract-transform-load steps.",
+            "Add retry/error handling and logging.",
+            "Make load idempotent for reruns.",
+            "Write runbook steps in README."
+          ],
+          "references": [
+            { "label": "Airflow Docs", "url": "https://airflow.apache.org/docs/" },
+            { "label": "Prefect Docs", "url": "https://docs.prefect.io/" }
+          ]
+        },
+        {
+          "id": 7,
+          "title": "Week 7",
+          "focus": "Orchestration",
+          "tasks": [
+            "Create DAG/flow with dependencies.",
+            "Schedule daily run and monitor status.",
+            "Add alerts for failure cases.",
+            "Document orchestration design decisions."
+          ],
+          "references": [
+            { "label": "Roadmap Week 7", "url": "week-by-week/12-week-roadmap.md" }
+          ]
+        },
+        {
+          "id": 8,
+          "title": "Week 8",
+          "focus": "Warehouse loading",
+          "tasks": [
+            "Load transformed data into warehouse tables.",
+            "Implement incremental load strategy.",
+            "Optimize partitioning or clustering.",
+            "Validate table freshness and counts."
+          ],
+          "references": [
+            { "label": "BigQuery Quickstart", "url": "https://cloud.google.com/bigquery/docs/quickstarts" },
+            { "label": "Redshift Docs", "url": "https://docs.aws.amazon.com/redshift/" }
+          ]
+        },
+        {
+          "id": 9,
+          "title": "Week 9",
+          "focus": "Streaming basics",
+          "tasks": [
+            "Set up producer and consumer for events.",
+            "Process stream records and aggregate output.",
+            "Handle delayed or malformed messages.",
+            "Write stream architecture notes."
+          ],
+          "references": [
+            { "label": "Project 3 Brief", "url": "projects/project-3-streaming-and-quality.md" },
+            { "label": "Kafka Docs", "url": "https://kafka.apache.org/documentation/" }
+          ]
+        },
+        {
+          "id": 10,
+          "title": "Week 10",
+          "focus": "Quality + monitoring",
+          "tasks": [
+            "Define data quality checks (schema/null/freshness).",
+            "Implement automated validation.",
+            "Create alerting rules for failures.",
+            "Document one incident simulation."
+          ],
+          "references": [
+            { "label": "Great Expectations", "url": "https://docs.greatexpectations.io/" }
+          ]
+        },
+        {
+          "id": 11,
+          "title": "Week 11",
+          "focus": "Capstone build",
+          "tasks": [
+            "Integrate ingestion, transformation, warehouse and dashboard.",
+            "Add tests and sample datasets.",
+            "Create architecture diagram.",
+            "Prepare capstone README."
+          ],
+          "references": [
+            { "label": "Capstone Week", "url": "week-by-week/12-week-roadmap.md" }
+          ]
+        },
+        {
+          "id": 12,
+          "title": "Week 12",
+          "focus": "Portfolio + interviews",
+          "tasks": [
+            "Polish all project READMEs.",
+            "Create short project demo videos.",
+            "Prepare interview Q&A answers.",
+            "Finalize resume bullets with outcomes."
+          ],
+          "references": [
+            { "label": "Interview Resources", "url": "resources/free-learning-resources.md" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "data-science-foundations",
+      "title": "Data Science Foundations",
+      "subtitle": "Math, ML basics, and model storytelling",
+      "weeks": [
+        { "id": 1, "title": "Week 1", "focus": "Python + NumPy", "tasks": ["Complete module", "Practice 60 minutes", "Build mini task", "Write summary"], "references": [{"label": "NumPy Docs", "url": "https://numpy.org/doc/"}] },
+        { "id": 2, "title": "Week 2", "focus": "Pandas + cleaning", "tasks": ["Complete module", "Practice 60 minutes", "Build mini task", "Write summary"], "references": [{"label": "Pandas Docs", "url": "https://pandas.pydata.org/docs/"}] },
+        { "id": 3, "title": "Week 3", "focus": "Statistics essentials", "tasks": ["Complete module", "Practice 60 minutes", "Build mini task", "Write summary"], "references": [{"label": "Khan Academy Stats", "url": "https://www.khanacademy.org/math/statistics-probability"}] },
+        { "id": 4, "title": "Week 4", "focus": "Visualization + EDA", "tasks": ["Complete module", "Practice 60 minutes", "Build mini task", "Write summary"], "references": [{"label": "Seaborn", "url": "https://seaborn.pydata.org/"}] },
+        { "id": 5, "title": "Week 5", "focus": "Supervised ML basics", "tasks": ["Complete module", "Practice 60 minutes", "Build mini task", "Write summary"], "references": [{"label": "Scikit-learn", "url": "https://scikit-learn.org/stable/"}] },
+        { "id": 6, "title": "Week 6", "focus": "Model evaluation", "tasks": ["Complete module", "Practice 60 minutes", "Build mini task", "Write summary"], "references": [{"label": "Evaluation Guide", "url": "https://scikit-learn.org/stable/model_evaluation.html"}] },
+        { "id": 7, "title": "Week 7", "focus": "Feature engineering", "tasks": ["Complete module", "Practice 60 minutes", "Build mini task", "Write summary"], "references": [{"label": "Feature Engineering", "url": "https://developers.google.com/machine-learning/crash-course"}] },
+        { "id": 8, "title": "Week 8", "focus": "Unsupervised learning", "tasks": ["Complete module", "Practice 60 minutes", "Build mini task", "Write summary"], "references": [{"label": "Clustering Basics", "url": "https://scikit-learn.org/stable/modules/clustering.html"}] },
+        { "id": 9, "title": "Week 9", "focus": "Model tuning", "tasks": ["Complete module", "Practice 60 minutes", "Build mini task", "Write summary"], "references": [{"label": "Hyperparameter Tuning", "url": "https://scikit-learn.org/stable/modules/grid_search.html"}] },
+        { "id": 10, "title": "Week 10", "focus": "Mini ML project", "tasks": ["Complete module", "Practice 60 minutes", "Build mini task", "Write summary"], "references": [{"label": "Kaggle", "url": "https://www.kaggle.com/"}] },
+        { "id": 11, "title": "Week 11", "focus": "Deployment basics", "tasks": ["Complete module", "Practice 60 minutes", "Build mini task", "Write summary"], "references": [{"label": "FastAPI", "url": "https://fastapi.tiangolo.com/"}] },
+        { "id": 12, "title": "Week 12", "focus": "Portfolio + case study", "tasks": ["Complete module", "Practice 60 minutes", "Build mini task", "Write summary"], "references": [{"label": "Portfolio Guide", "url": "resources/free-learning-resources.md"}] }
+      ]
+    },
+    {
+      "id": "business-analytics-pro",
+      "title": "Business Analytics Professional",
+      "subtitle": "Metrics, dashboards, and decision storytelling",
+      "weeks": [
+        { "id": 1, "title": "Week 1", "focus": "Business metrics foundations", "tasks": ["Complete module", "Practice 60 minutes", "Build mini task", "Write summary"], "references": [{"label": "Roadmap", "url": "week-by-week/12-week-roadmap.md"}] },
+        { "id": 2, "title": "Week 2", "focus": "SQL for analytics", "tasks": ["Complete module", "Practice 60 minutes", "Build mini task", "Write summary"], "references": [{"label": "SQL Practice", "url": "https://www.hackerrank.com/domains/sql"}] },
+        { "id": 3, "title": "Week 3", "focus": "Data cleaning workflow", "tasks": ["Complete module", "Practice 60 minutes", "Build mini task", "Write summary"], "references": [{"label": "Pandas Docs", "url": "https://pandas.pydata.org/docs/"}] },
+        { "id": 4, "title": "Week 4", "focus": "KPI tree design", "tasks": ["Complete module", "Practice 60 minutes", "Build mini task", "Write summary"], "references": [{"label": "KPI Design", "url": "https://www.tableau.com/learn/articles/key-performance-indicators"}] },
+        { "id": 5, "title": "Week 5", "focus": "Dashboard UX", "tasks": ["Complete module", "Practice 60 minutes", "Build mini task", "Write summary"], "references": [{"label": "Project 1", "url": "projects/project-1-analytics-dashboard.md"}] },
+        { "id": 6, "title": "Week 6", "focus": "A/B testing basics", "tasks": ["Complete module", "Practice 60 minutes", "Build mini task", "Write summary"], "references": [{"label": "A/B Testing", "url": "https://www.optimizely.com/optimization-glossary/ab-testing/"}] },
+        { "id": 7, "title": "Week 7", "focus": "Cohort analysis", "tasks": ["Complete module", "Practice 60 minutes", "Build mini task", "Write summary"], "references": [{"label": "Cohort Guide", "url": "https://www.mckinsey.com/capabilities/growth-marketing-and-sales/our-insights/cohort-analysis"}] },
+        { "id": 8, "title": "Week 8", "focus": "Forecasting basics", "tasks": ["Complete module", "Practice 60 minutes", "Build mini task", "Write summary"], "references": [{"label": "Forecasting", "url": "https://otexts.com/fpp3/"}] },
+        { "id": 9, "title": "Week 9", "focus": "Stakeholder reporting", "tasks": ["Complete module", "Practice 60 minutes", "Build mini task", "Write summary"], "references": [{"label": "Storytelling", "url": "https://hbr.org/2013/04/how-to-tell-a-story-with-data"}] },
+        { "id": 10, "title": "Week 10", "focus": "Executive presentation", "tasks": ["Complete module", "Practice 60 minutes", "Build mini task", "Write summary"], "references": [{"label": "Presentation Framework", "url": "https://www.mckinsey.com/featured-insights"}] },
+        { "id": 11, "title": "Week 11", "focus": "End-to-end case project", "tasks": ["Complete module", "Practice 60 minutes", "Build mini task", "Write summary"], "references": [{"label": "Case Project", "url": "projects/project-2-batch-pipeline.md"}] },
+        { "id": 12, "title": "Week 12", "focus": "Portfolio + interview prep", "tasks": ["Complete module", "Practice 60 minutes", "Build mini task", "Write summary"], "references": [{"label": "Resources", "url": "resources/free-learning-resources.md"}] }
+      ]
+    }
+  ]
+}
