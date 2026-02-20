@@ -15,6 +15,7 @@ const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const PROFILES_TABLE = process.env.PROFILES_TABLE;
 const PROGRESS_TABLE = process.env.PROGRESS_TABLE;
 const LOGS_TABLE = process.env.LOGS_TABLE;
+const DEFAULT_COURSE_ID = "analytics-to-de";
 
 const WEEK_IDS = Array.from({ length: 13 }, (_, i) => i);
 
@@ -32,6 +33,42 @@ function defaultTaskProgress() {
     taskProgress[id] = [];
   }
   return taskProgress;
+}
+
+function defaultCourseProgress() {
+  return {
+    goalWeeklyHours: 20,
+    completedWeeks: defaultCompletedWeeks(),
+    taskProgress: defaultTaskProgress(),
+    certificate: null
+  };
+}
+
+function defaultCoursesProgress() {
+  return {
+    [DEFAULT_COURSE_ID]: defaultCourseProgress()
+  };
+}
+
+function normalizeProgress(item = {}) {
+  if (item.courses && item.activeCourseId) {
+    return {
+      activeCourseId: item.activeCourseId,
+      courses: item.courses
+    };
+  }
+
+  return {
+    activeCourseId: DEFAULT_COURSE_ID,
+    courses: {
+      [DEFAULT_COURSE_ID]: {
+        goalWeeklyHours: Number(item.goalWeeklyHours || 20),
+        completedWeeks: item.completedWeeks || defaultCompletedWeeks(),
+        taskProgress: item.taskProgress || defaultTaskProgress(),
+        certificate: item.certificate || null
+      }
+    }
+  };
 }
 
 function response(statusCode, body) {
@@ -101,10 +138,8 @@ async function getOrCreateProgress(userId) {
   const now = new Date().toISOString();
   const created = {
     userId,
-    goalWeeklyHours: 20,
-    completedWeeks: defaultCompletedWeeks(),
-    taskProgress: defaultTaskProgress(),
-    certificate: null,
+    activeCourseId: DEFAULT_COURSE_ID,
+    courses: defaultCoursesProgress(),
     createdAt: now,
     updatedAt: now
   };
@@ -119,7 +154,7 @@ async function getOrCreateProgress(userId) {
   return created;
 }
 
-async function listLogs(userId) {
+async function listLogs(userId, courseId = "") {
   const result = await ddb.send(
     new QueryCommand({
       TableName: LOGS_TABLE,
@@ -130,7 +165,10 @@ async function listLogs(userId) {
     })
   );
 
-  const logs = (result.Items || []).sort((a, b) => (a.logDate < b.logDate ? 1 : -1));
+  let logs = (result.Items || []).sort((a, b) => (a.logDate < b.logDate ? 1 : -1));
+  if (courseId) {
+    logs = logs.filter((item) => (item.courseId || DEFAULT_COURSE_ID) === courseId);
+  }
   return logs;
 }
 
@@ -150,6 +188,7 @@ async function replaceAllLogs(userId, logs) {
         id: randomUUID(),
         logDate: item.logDate,
         weekNo: Number(item.weekNo),
+        courseId: item.courseId || DEFAULT_COURSE_ID,
         topic: item.topic,
         hours: Number(item.hours),
         notes: item.notes || "",
@@ -209,15 +248,12 @@ export const handler = async (event) => {
 
     if (method === "GET" && path === "/progress") {
       const progress = await getOrCreateProgress(userId);
-      return response(200, progress);
+      return response(200, normalizeProgress(progress));
     }
 
     if (method === "PUT" && path === "/progress") {
       const body = JSON.parse(event.body || "{}");
-      const goalWeeklyHours = Number(body.goalWeeklyHours || 20);
-      const completedWeeks = body.completedWeeks || defaultCompletedWeeks();
-      const taskProgress = body.taskProgress || defaultTaskProgress();
-      const certificate = body.certificate || null;
+      const normalized = normalizeProgress(body);
       const now = new Date().toISOString();
 
       const existing = await getOrCreateProgress(userId);
@@ -227,10 +263,8 @@ export const handler = async (event) => {
           TableName: PROGRESS_TABLE,
           Item: {
             userId,
-            goalWeeklyHours,
-            completedWeeks,
-            taskProgress,
-            certificate,
+            activeCourseId: normalized.activeCourseId || DEFAULT_COURSE_ID,
+            courses: normalized.courses || defaultCoursesProgress(),
             updatedAt: now,
             createdAt: existing.createdAt || now
           }
@@ -238,11 +272,12 @@ export const handler = async (event) => {
       );
 
       const progress = await getOrCreateProgress(userId);
-      return response(200, progress);
+      return response(200, normalizeProgress(progress));
     }
 
     if (method === "GET" && path === "/logs") {
-      const logs = await listLogs(userId);
+      const courseId = event?.queryStringParameters?.courseId || "";
+      const logs = await listLogs(userId, courseId);
       return response(200, { logs });
     }
 
@@ -253,6 +288,7 @@ export const handler = async (event) => {
         id: randomUUID(),
         logDate: body.logDate,
         weekNo: Number(body.weekNo),
+        courseId: String(body.courseId || DEFAULT_COURSE_ID),
         topic: String(body.topic || "").trim(),
         hours: Number(body.hours),
         notes: String(body.notes || ""),
@@ -291,21 +327,20 @@ export const handler = async (event) => {
 
     if (method === "POST" && path === "/import") {
       const body = JSON.parse(event.body || "{}");
-      if (!body?.progress?.completedWeeks || !Array.isArray(body.logs)) {
+      if (!body?.progress || !Array.isArray(body.logs)) {
         return response(400, { error: "Invalid import payload" });
       }
 
       const now = new Date().toISOString();
       const existing = await getOrCreateProgress(userId);
+      const normalized = normalizeProgress(body.progress);
       await ddb.send(
         new PutCommand({
           TableName: PROGRESS_TABLE,
           Item: {
             userId,
-            goalWeeklyHours: Number(body.progress.goalWeeklyHours || 20),
-            completedWeeks: body.progress.completedWeeks,
-            taskProgress: body.progress.taskProgress || defaultTaskProgress(),
-            certificate: body.progress.certificate || null,
+            activeCourseId: normalized.activeCourseId || DEFAULT_COURSE_ID,
+            courses: normalized.courses || defaultCoursesProgress(),
             updatedAt: now,
             createdAt: existing.createdAt || now
           }

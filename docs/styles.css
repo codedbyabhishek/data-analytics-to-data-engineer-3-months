@@ -291,6 +291,17 @@ button.secondary,
   flex-wrap: wrap;
 }
 
+.course-picker {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 240px;
+}
+
+.course-picker label {
+  font-size: 0.8rem;
+  color: #5e6e8a;
+}
+
 .file-btn {
   position: relative;
   display: inline-flex;
