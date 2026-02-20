@@ -1,5 +1,6 @@
 const DEFAULT_COURSE_ID = "analytics-to-de";
 const CATALOG_STORAGE_KEY = "dj_course_catalog_v1";
+const BILLING_ENABLED = false;
 
 const FALLBACK_CATALOG = {
   version: 1,
@@ -56,6 +57,7 @@ const streakCount = document.getElementById("streakCount");
 const weeksDone = document.getElementById("weeksDone");
 const billingStatus = document.getElementById("billingStatus");
 const plansGrid = document.getElementById("plansGrid");
+const billingPanel = document.getElementById("billingPanel");
 
 const weeksGrid = document.getElementById("weeksGrid");
 const logForm = document.getElementById("logForm");
@@ -349,17 +351,18 @@ async function loadLogsForActiveCourse() {
 }
 
 async function loadState() {
-  const [profile, progressRaw, plansPayload, billingPayload] = await Promise.all([
-    apiFetch("/profile"),
-    apiFetch("/progress"),
-    apiFetch("/billing/plans"),
-    apiFetch("/billing/subscription")
-  ]);
+  const [profile, progressRaw] = await Promise.all([apiFetch("/profile"), apiFetch("/progress")]);
   state.profile = profile;
   state.progress = normalizeProgress(progressRaw);
   state.activeCourseId = state.progress.activeCourseId || COURSES[0].id;
-  state.plans = plansPayload.plans || [];
-  state.billing = billingPayload || { plan: "free", status: "active" };
+  state.plans = [];
+  state.billing = { plan: "free", status: "active" };
+
+  if (BILLING_ENABLED) {
+    const [plansPayload, billingPayload] = await Promise.all([apiFetch("/billing/plans"), apiFetch("/billing/subscription")]);
+    state.plans = plansPayload.plans || [];
+    state.billing = billingPayload || { plan: "free", status: "active" };
+  }
   await loadLogsForActiveCourse();
 }
 
@@ -583,6 +586,11 @@ function renderCertificate() {
 }
 
 function renderBilling() {
+  if (!BILLING_ENABLED) {
+    if (billingPanel) billingPanel.classList.add("hidden");
+    return;
+  }
+  if (billingPanel) billingPanel.classList.remove("hidden");
   if (!plansGrid || !billingStatus) return;
   const currentPlan = state.billing?.plan || "free";
   const currentStatus = state.billing?.status || "active";
@@ -675,6 +683,7 @@ courseSelect?.addEventListener("change", async () => {
 });
 
 plansGrid?.addEventListener("click", async (e) => {
+  if (!BILLING_ENABLED) return;
   const btn = e.target.closest("button[data-plan-id]");
   if (!btn) return;
   const planId = btn.dataset.planId;

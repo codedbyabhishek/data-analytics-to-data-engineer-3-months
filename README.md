@@ -60,7 +60,7 @@ Week 0 checklist here: [`templates/week-0-daily-checklist.md`](templates/week-0-
   - Set weekly hour goal
   - Export/import your progress data from cloud account
   - JSON-based course configuration admin editor
-  - Subscription-ready billing foundation (plans + checkout flow API)
+  - Subscription-ready billing foundation (currently disabled in UI; enable later)
 
 Important:
 - Configure AWS first using [`docs/aws-setup.md`](docs/aws-setup.md).
