@@ -1,6 +1,3 @@
-const STORAGE_KEY = "da_de_tracker_accounts_v1";
-const SESSION_KEY = "da_de_tracker_current_user";
-
 const WEEK_DEFS = [
   { id: 0, title: "Week 0", focus: "Terminal + Git + Python setup" },
   { id: 1, title: "Week 1", focus: "Python basics" },
@@ -17,6 +14,7 @@ const WEEK_DEFS = [
   { id: 12, title: "Week 12", focus: "Portfolio + interviews" }
 ];
 
+const setupNotice = document.getElementById("setupNotice");
 const authSection = document.getElementById("authSection");
 const appSection = document.getElementById("appSection");
 const messageEl = document.getElementById("message");
@@ -44,63 +42,17 @@ const goalHours = document.getElementById("goalHours");
 const saveGoalBtn = document.getElementById("saveGoalBtn");
 const goalStatus = document.getElementById("goalStatus");
 
-function hashPassword(password) {
-  return btoa(unescape(encodeURIComponent(password)));
-}
+const config = window.APP_CONFIG || {};
+const hasConfig = Boolean(config.SUPABASE_URL && config.SUPABASE_ANON_KEY);
+const supabase = hasConfig
+  ? window.supabase.createClient(config.SUPABASE_URL, config.SUPABASE_ANON_KEY)
+  : null;
 
-function getAccounts() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
-  } catch {
-    return {};
-  }
-}
-
-function saveAccounts(accounts) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(accounts));
-}
-
-function createDefaultProgress() {
-  const weeks = {};
-  for (const wk of WEEK_DEFS) {
-    weeks[wk.id] = { completed: false, hours: 0 };
-  }
-  return {
-    goalWeeklyHours: 20,
-    weeks,
-    logs: []
-  };
-}
-
-function getCurrentUsername() {
-  return localStorage.getItem(SESSION_KEY);
-}
-
-function setCurrentUsername(username) {
-  if (!username) {
-    localStorage.removeItem(SESSION_KEY);
-    return;
-  }
-  localStorage.setItem(SESSION_KEY, username);
-}
-
-function getCurrentAccount() {
-  const username = getCurrentUsername();
-  if (!username) return null;
-  const accounts = getAccounts();
-  return accounts[username] || null;
-}
-
-function updateCurrentAccount(updateFn) {
-  const username = getCurrentUsername();
-  if (!username) return;
-  const accounts = getAccounts();
-  const current = accounts[username];
-  if (!current) return;
-  updateFn(current);
-  accounts[username] = current;
-  saveAccounts(accounts);
-}
+let state = {
+  profile: null,
+  progress: null,
+  logs: []
+};
 
 function showMessage(msg, isError = true) {
   messageEl.style.color = isError ? "#b42318" : "#00703c";
@@ -109,26 +61,23 @@ function showMessage(msg, isError = true) {
     if (messageEl.textContent === msg) {
       messageEl.textContent = "";
     }
-  }, 3000);
+  }, 4000);
 }
 
-function renderAuthState() {
-  const account = getCurrentAccount();
-  if (!account) {
-    authSection.classList.remove("hidden");
-    appSection.classList.add("hidden");
-    return;
+function createDefaultWeeks() {
+  const completed = {};
+  for (const wk of WEEK_DEFS) {
+    completed[wk.id] = false;
   }
-  authSection.classList.add("hidden");
-  appSection.classList.remove("hidden");
-  renderApp(account);
+  return completed;
 }
 
 function calcStreak(logs) {
   if (!logs.length) return 0;
-  const daySet = new Set(logs.map((l) => l.date));
-  let streak = 0;
+  const daySet = new Set(logs.map((l) => l.log_date));
   const date = new Date();
+  let streak = 0;
+
   while (true) {
     const d = date.toISOString().split("T")[0];
     if (!daySet.has(d)) {
@@ -146,7 +95,22 @@ function calcStreak(logs) {
     streak += 1;
     date.setDate(date.getDate() - 1);
   }
+
   return streak;
+}
+
+function calculateWeekHours(logs) {
+  const hoursMap = {};
+  for (const wk of WEEK_DEFS) {
+    hoursMap[wk.id] = 0;
+  }
+
+  for (const log of logs) {
+    const w = Number(log.week_no);
+    hoursMap[w] = Number(hoursMap[w] || 0) + Number(log.hours || 0);
+  }
+
+  return hoursMap;
 }
 
 function populateWeekSelect() {
@@ -159,47 +123,116 @@ function populateWeekSelect() {
   }
 }
 
-function renderWeeks(progress) {
-  weeksGrid.innerHTML = "";
-  for (const wk of WEEK_DEFS) {
-    const item = progress.weeks[wk.id] || { completed: false, hours: 0 };
-    const card = document.createElement("article");
-    card.className = `week-card ${item.completed ? "done" : ""}`;
+async function ensureUserRows(user, fullNameFromSignup = "") {
+  const fallbackName = fullNameFromSignup || user.user_metadata?.full_name || user.email || "Learner";
 
+  const { error: profileError } = await supabase
+    .from("profiles")
+    .upsert({ user_id: user.id, full_name: fallbackName }, { onConflict: "user_id" });
+
+  if (profileError) throw profileError;
+
+  const { data: progressRow, error: progressReadError } = await supabase
+    .from("user_progress")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (progressReadError) throw progressReadError;
+
+  if (!progressRow) {
+    const { error: progressInsertError } = await supabase.from("user_progress").insert({
+      user_id: user.id,
+      goal_weekly_hours: 20,
+      completed_weeks_json: createDefaultWeeks()
+    });
+    if (progressInsertError) throw progressInsertError;
+  }
+}
+
+async function loadState(user) {
+  const [{ data: profile, error: profileError }, { data: progress, error: progressError }, { data: logs, error: logsError }] =
+    await Promise.all([
+      supabase.from("profiles").select("full_name, created_at").eq("user_id", user.id).single(),
+      supabase
+        .from("user_progress")
+        .select("goal_weekly_hours, completed_weeks_json")
+        .eq("user_id", user.id)
+        .single(),
+      supabase
+        .from("learning_logs")
+        .select("id, log_date, week_no, topic, hours, notes")
+        .eq("user_id", user.id)
+        .order("log_date", { ascending: false })
+    ]);
+
+  if (profileError) throw profileError;
+  if (progressError) throw progressError;
+  if (logsError) throw logsError;
+
+  state = {
+    profile,
+    progress,
+    logs
+  };
+}
+
+function renderWeeks() {
+  weeksGrid.innerHTML = "";
+  const completed = state.progress.completed_weeks_json || createDefaultWeeks();
+  const hoursMap = calculateWeekHours(state.logs);
+
+  for (const wk of WEEK_DEFS) {
+    const isDone = Boolean(completed[wk.id]);
+    const card = document.createElement("article");
+    card.className = `week-card ${isDone ? "done" : ""}`;
     const safeId = `week-${wk.id}`;
+
     card.innerHTML = `
       <h4>${wk.title}</h4>
       <p class="muted">${wk.focus}</p>
       <div class="week-line">
         <label>
-          <input type="checkbox" id="${safeId}" ${item.completed ? "checked" : ""}>
+          <input type="checkbox" id="${safeId}" ${isDone ? "checked" : ""}>
           Completed
         </label>
-        <span>${Number(item.hours || 0)}h logged</span>
+        <span>${Number(hoursMap[wk.id] || 0)}h logged</span>
       </div>
     `;
 
     const checkbox = card.querySelector(`#${safeId}`);
-    checkbox.addEventListener("change", (e) => {
-      updateCurrentAccount((account) => {
-        account.progress.weeks[wk.id].completed = e.target.checked;
-      });
-      renderAuthState();
+    checkbox.addEventListener("change", async (e) => {
+      const next = { ...(state.progress.completed_weeks_json || createDefaultWeeks()) };
+      next[wk.id] = e.target.checked;
+
+      const { error } = await supabase
+        .from("user_progress")
+        .update({ completed_weeks_json: next })
+        .eq("user_id", (await supabase.auth.getUser()).data.user.id);
+
+      if (error) {
+        showMessage(error.message);
+        e.target.checked = !e.target.checked;
+        return;
+      }
+
+      state.progress.completed_weeks_json = next;
+      renderStats();
+      renderWeeks();
     });
 
     weeksGrid.appendChild(card);
   }
 }
 
-function renderLogs(progress) {
+function renderLogs() {
   logsBody.innerHTML = "";
-  const sorted = [...progress.logs].sort((a, b) => (a.date < b.date ? 1 : -1));
 
-  for (const log of sorted) {
+  for (const log of state.logs) {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${log.date}</td>
-      <td>Week ${log.week}</td>
+      <td>${log.log_date}</td>
+      <td>Week ${log.week_no}</td>
       <td>${log.topic}</td>
       <td>${log.hours}</td>
       <td>${log.notes || "-"}</td>
@@ -209,109 +242,154 @@ function renderLogs(progress) {
   }
 
   logsBody.querySelectorAll(".delete-log").forEach((btn) => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", async () => {
       const id = btn.dataset.id;
-      updateCurrentAccount((account) => {
-        const log = account.progress.logs.find((l) => l.id === id);
-        if (log) {
-          account.progress.weeks[log.week].hours = Math.max(
-            0,
-            Number(account.progress.weeks[log.week].hours || 0) - Number(log.hours)
-          );
-        }
-        account.progress.logs = account.progress.logs.filter((l) => l.id !== id);
-      });
-      renderAuthState();
+      const { error } = await supabase.from("learning_logs").delete().eq("id", id);
+      if (error) {
+        showMessage(error.message);
+        return;
+      }
+
+      state.logs = state.logs.filter((l) => l.id !== id);
+      renderStats();
+      renderWeeks();
+      renderLogs();
       showMessage("Log removed.", false);
     });
   });
 }
 
-function renderStats(progress) {
+function renderStats() {
+  const completed = state.progress.completed_weeks_json || createDefaultWeeks();
+  const doneCount = Object.values(completed).filter(Boolean).length;
   const totalWeeks = WEEK_DEFS.length;
-  const done = Object.values(progress.weeks).filter((w) => w.completed).length;
-  const percent = Math.round((done / totalWeeks) * 100);
-  const hours = progress.logs.reduce((sum, l) => sum + Number(l.hours), 0);
-  const streak = calcStreak(progress.logs);
+  const percent = Math.round((doneCount / totalWeeks) * 100);
+  const total = state.logs.reduce((sum, l) => sum + Number(l.hours), 0);
+  const streak = calcStreak(state.logs);
 
   completionPct.textContent = `${percent}%`;
   completionBar.style.width = `${percent}%`;
-  totalHours.textContent = String(hours);
+  totalHours.textContent = String(total);
   streakCount.textContent = `${streak} day${streak === 1 ? "" : "s"}`;
-  weeksDone.textContent = `${done} / ${totalWeeks}`;
+  weeksDone.textContent = `${doneCount} / ${totalWeeks}`;
 
-  const currentWeekHours = Number(progress.weeks[0].hours || 0);
-  const goal = Number(progress.goalWeeklyHours || 20);
-  goalStatus.textContent = `Goal: ${goal}h/week. Week 0 currently logged: ${currentWeekHours}h.`;
+  const goal = Number(state.progress.goal_weekly_hours || 20);
+  const week0Hours = calculateWeekHours(state.logs)[0] || 0;
+  goalStatus.textContent = `Goal: ${goal}h/week. Week 0 currently logged: ${week0Hours}h.`;
 }
 
-function renderApp(account) {
-  const { profile, progress } = account;
+function renderApp(user) {
+  const fullName = state.profile.full_name || user.email;
+  welcomeText.textContent = `Welcome, ${fullName}`;
+  joinedText.textContent = `Email: ${user.email} | Joined: ${new Date(state.profile.created_at).toLocaleDateString()}`;
+  goalHours.value = state.progress.goal_weekly_hours || 20;
 
-  welcomeText.textContent = `Welcome, ${profile.name}`;
-  joinedText.textContent = `Username: ${profile.username} | Joined: ${new Date(profile.createdAt).toLocaleDateString()}`;
-
-  goalHours.value = progress.goalWeeklyHours || 20;
-  renderStats(progress);
-  renderWeeks(progress);
-  renderLogs(progress);
+  renderStats();
+  renderWeeks();
+  renderLogs();
 }
 
-signupForm.addEventListener("submit", (e) => {
+async function renderAuthState() {
+  if (!hasConfig) {
+    setupNotice.classList.remove("hidden");
+    authSection.classList.add("hidden");
+    appSection.classList.add("hidden");
+    return;
+  }
+
+  setupNotice.classList.add("hidden");
+
+  const { data } = await supabase.auth.getSession();
+  const user = data.session?.user;
+
+  if (!user) {
+    authSection.classList.remove("hidden");
+    appSection.classList.add("hidden");
+    return;
+  }
+
+  authSection.classList.add("hidden");
+  appSection.classList.remove("hidden");
+
+  try {
+    await ensureUserRows(user);
+    await loadState(user);
+    renderApp(user);
+  } catch (err) {
+    showMessage(err.message || "Could not load account data.");
+  }
+}
+
+signupForm.addEventListener("submit", async (e) => {
   e.preventDefault();
-  const name = document.getElementById("signupName").value.trim();
-  const username = document.getElementById("signupUser").value.trim().toLowerCase();
+  if (!hasConfig) return;
+
+  const fullName = document.getElementById("signupName").value.trim();
+  const email = document.getElementById("signupEmail").value.trim();
   const password = document.getElementById("signupPass").value;
 
-  const accounts = getAccounts();
-  if (accounts[username]) {
-    showMessage("Username already exists.");
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: { full_name: fullName }
+    }
+  });
+
+  if (error) {
+    showMessage(error.message);
     return;
   }
 
-  accounts[username] = {
-    profile: {
-      name,
-      username,
-      createdAt: new Date().toISOString()
-    },
-    passwordHash: hashPassword(password),
-    progress: createDefaultProgress()
-  };
+  if (data.user) {
+    try {
+      await ensureUserRows(data.user, fullName);
+    } catch (rowError) {
+      showMessage(rowError.message);
+      return;
+    }
+  }
 
-  saveAccounts(accounts);
-  setCurrentUsername(username);
   signupForm.reset();
-  renderAuthState();
-  showMessage("Account created.", false);
+
+  if (!data.session) {
+    showMessage("Account created. Check your email and verify before login.", false);
+    return;
+  }
+
+  showMessage("Account created and logged in.", false);
+  await renderAuthState();
 });
 
-loginForm.addEventListener("submit", (e) => {
+loginForm.addEventListener("submit", async (e) => {
   e.preventDefault();
-  const username = document.getElementById("loginUser").value.trim().toLowerCase();
+  if (!hasConfig) return;
+
+  const email = document.getElementById("loginEmail").value.trim();
   const password = document.getElementById("loginPass").value;
 
-  const accounts = getAccounts();
-  const account = accounts[username];
-  if (!account || account.passwordHash !== hashPassword(password)) {
-    showMessage("Invalid username or password.");
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) {
+    showMessage(error.message);
     return;
   }
 
-  setCurrentUsername(username);
   loginForm.reset();
-  renderAuthState();
   showMessage("Logged in.", false);
+  await renderAuthState();
 });
 
-logoutBtn.addEventListener("click", () => {
-  setCurrentUsername(null);
-  renderAuthState();
+logoutBtn.addEventListener("click", async () => {
+  if (!hasConfig) return;
+  await supabase.auth.signOut();
   showMessage("Logged out.", false);
+  await renderAuthState();
 });
 
-logForm.addEventListener("submit", (e) => {
+logForm.addEventListener("submit", async (e) => {
   e.preventDefault();
+  if (!hasConfig) return;
+
   const date = document.getElementById("logDate").value;
   const week = Number(logWeek.value);
   const topic = document.getElementById("logTopic").value.trim();
@@ -323,52 +401,87 @@ logForm.addEventListener("submit", (e) => {
     return;
   }
 
-  updateCurrentAccount((account) => {
-    account.progress.logs.push({
-      id: crypto.randomUUID(),
-      date,
-      week,
+  const user = (await supabase.auth.getUser()).data.user;
+  const { data, error } = await supabase
+    .from("learning_logs")
+    .insert({
+      user_id: user.id,
+      log_date: date,
+      week_no: week,
       topic,
       hours,
       notes
-    });
-    account.progress.weeks[week].hours = Number(account.progress.weeks[week].hours || 0) + hours;
-  });
+    })
+    .select("id, log_date, week_no, topic, hours, notes")
+    .single();
 
+  if (error) {
+    showMessage(error.message);
+    return;
+  }
+
+  state.logs.unshift(data);
   logForm.reset();
   document.getElementById("logDate").value = new Date().toISOString().split("T")[0];
-  renderAuthState();
+
+  renderStats();
+  renderWeeks();
+  renderLogs();
   showMessage("Learning log added.", false);
 });
 
-saveGoalBtn.addEventListener("click", () => {
+saveGoalBtn.addEventListener("click", async () => {
+  if (!hasConfig) return;
+
   const goal = Number(goalHours.value);
   if (!goal || goal < 5) {
     showMessage("Set a weekly goal of at least 5 hours.");
     return;
   }
-  updateCurrentAccount((account) => {
-    account.progress.goalWeeklyHours = goal;
-  });
-  renderAuthState();
+
+  const user = (await supabase.auth.getUser()).data.user;
+  const { error } = await supabase
+    .from("user_progress")
+    .update({ goal_weekly_hours: goal })
+    .eq("user_id", user.id);
+
+  if (error) {
+    showMessage(error.message);
+    return;
+  }
+
+  state.progress.goal_weekly_hours = goal;
+  renderStats();
   showMessage("Goal updated.", false);
 });
 
-exportBtn.addEventListener("click", () => {
-  const account = getCurrentAccount();
-  if (!account) return;
+exportBtn.addEventListener("click", async () => {
+  if (!hasConfig) return;
+  const user = (await supabase.auth.getUser()).data.user;
+  if (!user) return;
 
-  const payload = JSON.stringify(account, null, 2);
+  const payload = JSON.stringify(
+    {
+      exported_at: new Date().toISOString(),
+      profile: state.profile,
+      progress: state.progress,
+      logs: state.logs
+    },
+    null,
+    2
+  );
+
   const blob = new Blob([payload], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `tracker-${account.profile.username}.json`;
+  a.download = `tracker-${user.email.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.json`;
   a.click();
   URL.revokeObjectURL(url);
 });
 
 importInput.addEventListener("change", async (e) => {
+  if (!hasConfig) return;
   const file = e.target.files?.[0];
   if (!file) return;
 
@@ -376,22 +489,54 @@ importInput.addEventListener("change", async (e) => {
     const text = await file.text();
     const imported = JSON.parse(text);
 
-    if (!imported.profile?.username || !imported.progress?.weeks || !Array.isArray(imported.progress.logs)) {
-      throw new Error("Invalid data file");
+    if (!imported.progress?.completed_weeks_json || !Array.isArray(imported.logs)) {
+      throw new Error("Invalid import file format.");
     }
 
-    updateCurrentAccount((account) => {
-      account.progress = imported.progress;
-    });
+    const user = (await supabase.auth.getUser()).data.user;
 
-    renderAuthState();
-    showMessage("Data imported.", false);
-  } catch {
-    showMessage("Could not import this file.");
+    const { error: updateProgressError } = await supabase
+      .from("user_progress")
+      .update({
+        goal_weekly_hours: Number(imported.progress.goal_weekly_hours || 20),
+        completed_weeks_json: imported.progress.completed_weeks_json
+      })
+      .eq("user_id", user.id);
+
+    if (updateProgressError) throw updateProgressError;
+
+    const { error: deleteLogsError } = await supabase.from("learning_logs").delete().eq("user_id", user.id);
+    if (deleteLogsError) throw deleteLogsError;
+
+    if (imported.logs.length) {
+      const rows = imported.logs.map((l) => ({
+        user_id: user.id,
+        log_date: l.log_date,
+        week_no: Number(l.week_no),
+        topic: l.topic,
+        hours: Number(l.hours),
+        notes: l.notes || ""
+      }));
+
+      const { error: insertLogsError } = await supabase.from("learning_logs").insert(rows);
+      if (insertLogsError) throw insertLogsError;
+    }
+
+    await loadState(user);
+    renderApp(user);
+    showMessage("Data imported successfully.", false);
+  } catch (err) {
+    showMessage(err.message || "Could not import this file.");
   }
 
   importInput.value = "";
 });
+
+if (hasConfig) {
+  supabase.auth.onAuthStateChange(async () => {
+    await renderAuthState();
+  });
+}
 
 populateWeekSelect();
 document.getElementById("logDate").value = new Date().toISOString().split("T")[0];

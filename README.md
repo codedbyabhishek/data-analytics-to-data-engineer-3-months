@@ -52,16 +52,17 @@ Week 0 checklist here: [`templates/week-0-daily-checklist.md`](templates/week-0-
 ## GitHub Pages Learning Tracker
 - Website source: [`docs/index.html`](docs/index.html)
 - Features:
-  - Create account / log in
+  - Real account auth (Supabase email/password)
   - Track Week 0 to Week 12 completion
   - Add daily learning logs with hours
   - View completion %, total hours, and streak
   - Set weekly hour goal
-  - Export/import your progress data
+  - Export/import your progress data from cloud account
 
 Important:
-- GitHub Pages is static, so accounts are stored in the user's browser (`localStorage`), not on a central server.
-- To avoid losing progress, users should export data regularly.
+- Configure Supabase first using [`docs/supabase-setup.md`](docs/supabase-setup.md).
+- Add keys in [`docs/config.js`](docs/config.js) using [`docs/config.example.js`](docs/config.example.js).
+- Database schema and RLS policies: [`supabase/schema.sql`](supabase/schema.sql).
 
 ## Projects You Will Build
 1. Analytics Dashboard with KPI storytelling

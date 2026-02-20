@@ -17,15 +17,20 @@
     <header class="hero">
       <p class="eyebrow">12-Week Roadmap</p>
       <h1>Data Analytics to Data Engineer Tracker</h1>
-      <p class="subtitle">Create your account, track daily learning, and monitor your progress from Week 0 to Week 12.</p>
+      <p class="subtitle">Create your account, track daily learning, and monitor your progress from Week 0 to Week 12 across devices.</p>
     </header>
 
-    <section id="authSection" class="panel auth-grid">
+    <section id="setupNotice" class="panel hidden">
+      <h2>Setup Required</h2>
+      <p class="muted">Supabase config is missing. Add your project values to <code>docs/config.js</code> using <code>docs/config.example.js</code>.</p>
+    </section>
+
+    <section id="authSection" class="panel auth-grid hidden">
       <div>
         <h2>Create Account</h2>
         <form id="signupForm" class="stack">
           <label>Full Name<input required id="signupName" type="text" /></label>
-          <label>Username<input required id="signupUser" type="text" minlength="3" /></label>
+          <label>Email<input required id="signupEmail" type="email" /></label>
           <label>Password<input required id="signupPass" type="password" minlength="6" /></label>
           <button type="submit">Create Account</button>
         </form>
@@ -33,7 +38,7 @@
       <div>
         <h2>Log In</h2>
         <form id="loginForm" class="stack">
-          <label>Username<input required id="loginUser" type="text" /></label>
+          <label>Email<input required id="loginEmail" type="email" /></label>
           <label>Password<input required id="loginPass" type="password" /></label>
           <button type="submit">Log In</button>
         </form>
@@ -132,6 +137,8 @@
     <p id="message" class="message" aria-live="polite"></p>
   </main>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
