@@ -811,6 +811,74 @@ th {
   margin: 0.18rem 0 0.34rem;
 }
 
+.placement-panel {
+  margin-top: 1rem;
+}
+
+.placement-metrics-grid {
+  margin-top: 0.7rem;
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.placement-metric-card {
+  border: 1px solid #d7e2f5;
+  border-radius: 12px;
+  padding: 0.72rem;
+  background: #fbfdff;
+}
+
+.placement-metric-card p {
+  margin: 0;
+  color: #5f6f8c;
+  font-size: 0.87rem;
+}
+
+.placement-metric-card h3 {
+  margin: 0.22rem 0 0;
+  font-size: 1.4rem;
+}
+
+.placement-goal-form,
+.placement-form {
+  margin-top: 0.85rem;
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.placement-board {
+  margin-top: 0.9rem;
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.placement-stage {
+  border: 1px solid #d8e2f2;
+  border-radius: 12px;
+  padding: 0.66rem;
+  background: #fff;
+}
+
+.placement-stage h4 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.placement-stage p {
+  margin: 0.3rem 0 0;
+  color: #4f5f7b;
+  font-size: 0.85rem;
+}
+
+.placement-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
 .admin-panel {
   margin-top: 1rem;
 }
@@ -1005,7 +1073,11 @@ button:disabled {
 
   .stats-grid,
   .log-form,
-  .admin-analytics-grid {
+  .admin-analytics-grid,
+  .placement-metrics-grid,
+  .placement-goal-form,
+  .placement-form,
+  .placement-board {
     grid-template-columns: 1fr;
   }
 

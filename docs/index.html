@@ -26,6 +26,7 @@
         <a href="#courses">Courses</a>
         <a href="#authSection">Login</a>
         <a href="#appSection">Dashboard</a>
+        <a href="#placementSection">Placement</a>
         <a href="#adminSection">Admin</a>
         <a href="https://github.com/codedbyabhishek/data-analytics-to-data-engineer-3-months" target="_blank" rel="noreferrer">GitHub</a>
       </nav>
@@ -312,6 +313,75 @@ print("Average:", avg)</code></pre>
         <article id="certificateCard" class="certificate-card hidden"></article>
       </section>
 
+      <section class="panel placement-panel" id="placementSection">
+        <div class="section-head">
+          <h2>Placement Support</h2>
+          <p class="muted">Track applications, interviews, and readiness in one dashboard.</p>
+        </div>
+
+        <div class="placement-metrics-grid">
+          <article class="placement-metric-card">
+            <p>Weekly Application Goal</p>
+            <h3 id="placementGoalValue">0</h3>
+          </article>
+          <article class="placement-metric-card">
+            <p>Applied This Week</p>
+            <h3 id="placementAppliedWeek">0</h3>
+          </article>
+          <article class="placement-metric-card">
+            <p>Active Interviews</p>
+            <h3 id="placementActiveInterviews">0</h3>
+          </article>
+          <article class="placement-metric-card">
+            <p>Readiness Score</p>
+            <h3 id="placementReadinessScore">0%</h3>
+          </article>
+        </div>
+
+        <form id="placementGoalForm" class="placement-goal-form">
+          <label>Weekly Applications Goal
+            <input id="placementGoalInput" type="number" min="1" max="100" step="1" />
+          </label>
+          <button type="submit">Save Placement Goal</button>
+        </form>
+
+        <form id="placementForm" class="placement-form">
+          <label>Company<input id="placementCompany" type="text" required /></label>
+          <label>Role<input id="placementRole" type="text" required /></label>
+          <label>Applied Date<input id="placementDate" type="date" required /></label>
+          <label>Status
+            <select id="placementStatus">
+              <option value="applied">Applied</option>
+              <option value="oa">Online Assessment</option>
+              <option value="interview1">Interview 1</option>
+              <option value="interview2">Interview 2</option>
+              <option value="offer">Offer</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </label>
+          <label>Notes<input id="placementNotes" type="text" placeholder="Referral, recruiter response, interview notes..." /></label>
+          <button type="submit">Add Application</button>
+        </form>
+
+        <div class="placement-board" id="placementBoard"></div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Company</th>
+                <th>Role</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Notes</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="placementTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
       <section class="panel admin-panel" id="adminSection">
         <div class="section-head">
           <h2>Admin Dashboard</h2>
@@ -377,7 +447,7 @@ print("Average:", avg)</code></pre>
   <footer class="site-footer">
     <div class="site-shell footer-shell">
       <p>Data Journey Tracker · Multi-course learning SaaS foundation</p>
-      <p><a href="#home">Home</a> · <a href="#courses">Courses</a> · <a href="#dashboard">Dashboard</a> · <a href="#adminSection">Admin</a></p>
+      <p><a href="#home">Home</a> · <a href="#courses">Courses</a> · <a href="#dashboard">Dashboard</a> · <a href="#placementSection">Placement</a> · <a href="#adminSection">Admin</a></p>
     </div>
   </footer>
 </body>

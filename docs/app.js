@@ -134,6 +134,20 @@ const metaDescriptionEl = document.getElementById("metaDescription");
 const canonicalLinkEl = document.getElementById("canonicalLink");
 const ogTitleEl = document.getElementById("ogTitle");
 const ogDescriptionEl = document.getElementById("ogDescription");
+const placementGoalValue = document.getElementById("placementGoalValue");
+const placementAppliedWeek = document.getElementById("placementAppliedWeek");
+const placementActiveInterviews = document.getElementById("placementActiveInterviews");
+const placementReadinessScore = document.getElementById("placementReadinessScore");
+const placementGoalForm = document.getElementById("placementGoalForm");
+const placementGoalInput = document.getElementById("placementGoalInput");
+const placementForm = document.getElementById("placementForm");
+const placementCompany = document.getElementById("placementCompany");
+const placementRole = document.getElementById("placementRole");
+const placementDate = document.getElementById("placementDate");
+const placementStatus = document.getElementById("placementStatus");
+const placementNotes = document.getElementById("placementNotes");
+const placementBoard = document.getElementById("placementBoard");
+const placementTableBody = document.getElementById("placementTableBody");
 
 const config = window.AWS_CONFIG || {};
 const hasConfig = Boolean(config.REGION && config.USER_POOL_ID && config.USER_POOL_CLIENT_ID && config.API_BASE_URL);
@@ -169,6 +183,15 @@ const DEFAULT_SEO = {
     "Professional learning platform for beginners: structured roadmaps, daily tracking, certificates, and progress dashboards.",
   canonical: `${window.location.origin}${window.location.pathname}`
 };
+
+const PLACEMENT_STAGES = [
+  { id: "applied", label: "Applied" },
+  { id: "oa", label: "Online Assessment" },
+  { id: "interview1", label: "Interview 1" },
+  { id: "interview2", label: "Interview 2" },
+  { id: "offer", label: "Offer" },
+  { id: "rejected", label: "Rejected" }
+];
 
 function showMessage(msg, isError = true) {
   messageEl.style.color = isError ? "#b42318" : "#00703c";
@@ -220,6 +243,112 @@ function collectAnalytics() {
     topWeek: topWeekEntry ? `Week ${topWeekEntry[0]}` : "-",
     topWeekHours: topWeekEntry ? Number(topWeekEntry[1]).toFixed(1) : "0.0"
   };
+}
+
+function createPlacementDefaults() {
+  return {
+    goalWeeklyApps: 20,
+    applications: []
+  };
+}
+
+function ensurePlacementState(courseProgress) {
+  if (!courseProgress.placement || typeof courseProgress.placement !== "object") {
+    courseProgress.placement = createPlacementDefaults();
+  }
+  if (!Array.isArray(courseProgress.placement.applications)) {
+    courseProgress.placement.applications = [];
+  }
+  if (!courseProgress.placement.goalWeeklyApps || Number(courseProgress.placement.goalWeeklyApps) < 1) {
+    courseProgress.placement.goalWeeklyApps = 20;
+  }
+  return courseProgress.placement;
+}
+
+function statusLabel(status) {
+  return PLACEMENT_STAGES.find((s) => s.id === status)?.label || status;
+}
+
+function nextPlacementStatus(status) {
+  const idx = PLACEMENT_STAGES.findIndex((s) => s.id === status);
+  if (idx < 0 || idx >= PLACEMENT_STAGES.length - 1) return status;
+  return PLACEMENT_STAGES[idx + 1].id;
+}
+
+function isoWeekStart(d) {
+  const date = new Date(d);
+  const day = date.getDay() || 7;
+  if (day !== 1) date.setHours(-24 * (day - 1));
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function calcPlacementMetrics(placement) {
+  const apps = placement.applications || [];
+  const nowWeek = isoWeekStart(new Date());
+  const appliedThisWeek = apps.filter((a) => {
+    if (!a.appliedDate) return false;
+    const d = new Date(a.appliedDate);
+    if (Number.isNaN(d.getTime())) return false;
+    return d >= nowWeek;
+  }).length;
+
+  const activeInterviews = apps.filter((a) => a.status === "interview1" || a.status === "interview2").length;
+  const offers = apps.filter((a) => a.status === "offer").length;
+  const completionPctValue = Number((completionPct.textContent || "0").replace("%", "")) || 0;
+
+  const readinessRaw =
+    Math.min(40, completionPctValue * 0.4) +
+    Math.min(20, (state.logs.length / 20) * 20) +
+    Math.min(20, (appliedThisWeek / Math.max(1, placement.goalWeeklyApps)) * 20) +
+    Math.min(20, offers * 10);
+
+  return {
+    appliedThisWeek,
+    activeInterviews,
+    offers,
+    readiness: Math.round(readinessRaw)
+  };
+}
+
+function renderPlacement() {
+  if (!placementGoalValue || !placementAppliedWeek || !placementActiveInterviews || !placementReadinessScore || !placementBoard || !placementTableBody) return;
+  const cp = activeCourseProgress();
+  const placement = ensurePlacementState(cp);
+  const metrics = calcPlacementMetrics(placement);
+
+  placementGoalValue.textContent = String(placement.goalWeeklyApps);
+  placementAppliedWeek.textContent = String(metrics.appliedThisWeek);
+  placementActiveInterviews.textContent = String(metrics.activeInterviews);
+  placementReadinessScore.textContent = `${metrics.readiness}%`;
+  if (placementGoalInput) placementGoalInput.value = String(placement.goalWeeklyApps);
+
+  placementBoard.innerHTML = PLACEMENT_STAGES.map((stage) => {
+    const count = placement.applications.filter((app) => app.status === stage.id).length;
+    return `<article class="placement-stage"><h4>${stage.label}</h4><p>${count} applications</p></article>`;
+  }).join("");
+
+  placementTableBody.innerHTML = placement.applications
+    .slice()
+    .sort((a, b) => (a.appliedDate < b.appliedDate ? 1 : -1))
+    .map(
+      (app) => `
+    <tr>
+      <td>${app.company}</td>
+      <td>${app.role}</td>
+      <td>${app.appliedDate}</td>
+      <td>${statusLabel(app.status)}</td>
+      <td>${app.notes || "-"}</td>
+      <td>
+        <div class="placement-actions">
+          <button type="button" class="secondary placement-advance" data-id="${app.id}">Advance</button>
+          <button type="button" class="secondary placement-delete" data-id="${app.id}">Delete</button>
+        </div>
+      </td>
+    </tr>
+  `
+    )
+    .join("");
 }
 
 function renderAdminAnalytics() {
@@ -401,7 +530,8 @@ function createCourseProgress(courseId) {
     completedWeeks: defaultCompletedWeeks(courseId),
     taskProgress: defaultTaskProgress(courseId),
     certificate: null,
-    lessonProgress: {}
+    lessonProgress: {},
+    placement: createPlacementDefaults()
   };
 }
 
@@ -425,8 +555,13 @@ function normalizeProgress(progress) {
         ...courses[course.id],
         ...incoming,
         completedWeeks: { ...courses[course.id].completedWeeks, ...(incoming.completedWeeks || {}) },
-        taskProgress: { ...courses[course.id].taskProgress, ...(incoming.taskProgress || {}) }
+        taskProgress: { ...courses[course.id].taskProgress, ...(incoming.taskProgress || {}) },
+        placement: {
+          ...createPlacementDefaults(),
+          ...(incoming.placement || {})
+        }
       };
+      if (!Array.isArray(courses[course.id].placement.applications)) courses[course.id].placement.applications = [];
     }
     return {
       activeCourseId: COURSE_MAP[progress.activeCourseId] ? progress.activeCourseId : COURSES[0].id,
@@ -775,6 +910,7 @@ function renderStats() {
   const hoursMap = calculateWeekHours(state.logs);
   goalStatus.textContent = `Goal: ${cp.goalWeeklyHours}h/week. ${firstWeek.title} logged: ${hoursMap[firstWeek.id] || 0}h.`;
   renderAdminAnalytics();
+  renderPlacement();
 }
 
 function renderCertificate() {
@@ -901,6 +1037,7 @@ function renderApp(user) {
   renderCertificate();
   renderBilling();
   renderBeginnerLessons();
+  renderPlacement();
   applyRoute();
 }
 
@@ -1103,6 +1240,95 @@ saveGoalBtn.addEventListener("click", async () => {
     showMessage("Goal updated.", false);
   } catch (err) {
     showMessage(err.message);
+  }
+});
+
+placementGoalForm?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const goal = Number(placementGoalInput?.value);
+  if (!goal || goal < 1) {
+    showMessage("Set a valid weekly applications goal.");
+    return;
+  }
+  try {
+    const next = structuredClone(state.progress);
+    const cp = next.courses[state.activeCourseId];
+    if (!cp.placement) cp.placement = createPlacementDefaults();
+    cp.placement.goalWeeklyApps = goal;
+    await persistProgress(next);
+    renderPlacement();
+    showMessage("Placement goal updated.", false);
+  } catch (err) {
+    showMessage(err.message || "Could not save placement goal.");
+  }
+});
+
+placementForm?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const company = placementCompany?.value.trim();
+  const role = placementRole?.value.trim();
+  const appliedDate = placementDate?.value;
+  const status = placementStatus?.value || "applied";
+  const notes = placementNotes?.value.trim() || "";
+
+  if (!company || !role || !appliedDate) {
+    showMessage("Company, role, and applied date are required.");
+    return;
+  }
+
+  try {
+    const next = structuredClone(state.progress);
+    const cp = next.courses[state.activeCourseId];
+    if (!cp.placement) cp.placement = createPlacementDefaults();
+    if (!Array.isArray(cp.placement.applications)) cp.placement.applications = [];
+    cp.placement.applications.push({
+      id: `APP-${Math.random().toString(36).slice(2, 9).toUpperCase()}`,
+      company,
+      role,
+      appliedDate,
+      status,
+      notes,
+      createdAt: new Date().toISOString()
+    });
+    await persistProgress(next);
+    placementForm.reset();
+    if (placementDate) placementDate.value = new Date().toISOString().split("T")[0];
+    renderPlacement();
+    showMessage("Application added.", false);
+  } catch (err) {
+    showMessage(err.message || "Could not add application.");
+  }
+});
+
+placementTableBody?.addEventListener("click", async (e) => {
+  const advanceBtn = e.target.closest(".placement-advance");
+  const deleteBtn = e.target.closest(".placement-delete");
+  if (!advanceBtn && !deleteBtn) return;
+
+  const id = advanceBtn?.dataset.id || deleteBtn?.dataset.id;
+  if (!id) return;
+
+  try {
+    const next = structuredClone(state.progress);
+    const cp = next.courses[state.activeCourseId];
+    if (!cp.placement || !Array.isArray(cp.placement.applications)) return;
+
+    if (advanceBtn) {
+      cp.placement.applications = cp.placement.applications.map((app) =>
+        app.id === id ? { ...app, status: nextPlacementStatus(app.status) } : app
+      );
+      await persistProgress(next);
+      renderPlacement();
+      showMessage("Application status advanced.", false);
+      return;
+    }
+
+    cp.placement.applications = cp.placement.applications.filter((app) => app.id !== id);
+    await persistProgress(next);
+    renderPlacement();
+    showMessage("Application deleted.", false);
+  } catch (err) {
+    showMessage(err.message || "Could not update application.");
   }
 });
 
@@ -1342,6 +1568,7 @@ tabSignupBtn?.addEventListener("click", () => setAuthPane("signup"));
 tabVerifyBtn?.addEventListener("click", () => setAuthPane("verify"));
 
 document.getElementById("logDate").value = new Date().toISOString().split("T")[0];
+if (placementDate) placementDate.value = new Date().toISOString().split("T")[0];
 setAuthPane("login", false);
 applySeoSettings(loadSeoSettings());
 window.addEventListener("hashchange", applyRoute);
