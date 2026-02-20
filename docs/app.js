@@ -51,9 +51,12 @@ const hasConfig = Boolean(
   config.API_BASE_URL
 );
 
-const amplify = window.aws_amplify;
-if (hasConfig) {
-  amplify.Amplify.configure({
+const amplifyGlobal = window.aws_amplify || {};
+const AmplifyApi = amplifyGlobal.Amplify || window.Amplify || null;
+const AuthApi = amplifyGlobal.Auth || window.Auth || null;
+
+if (hasConfig && AmplifyApi && AuthApi) {
+  AmplifyApi.configure({
     Auth: {
       region: config.REGION,
       userPoolId: config.USER_POOL_ID,
@@ -138,7 +141,7 @@ function populateWeekSelect() {
 }
 
 async function getToken() {
-  const session = await amplify.Auth.currentSession();
+  const session = await AuthApi.currentSession();
   return session.getIdToken().getJwtToken();
 }
 
@@ -290,10 +293,13 @@ function renderApp(user) {
 }
 
 async function renderAuthState() {
-  if (!hasConfig) {
+  if (!hasConfig || !AmplifyApi || !AuthApi) {
     setupNotice.classList.remove("hidden");
     authSection.classList.add("hidden");
     appSection.classList.add("hidden");
+    if (hasConfig && (!AmplifyApi || !AuthApi)) {
+      showMessage("Auth library failed to load. Refresh once and try again.");
+    }
     return;
   }
 
@@ -301,7 +307,7 @@ async function renderAuthState() {
 
   let user;
   try {
-    user = await amplify.Auth.currentAuthenticatedUser();
+    user = await AuthApi.currentAuthenticatedUser();
   } catch {
     authSection.classList.remove("hidden");
     appSection.classList.add("hidden");
@@ -328,7 +334,7 @@ signupForm.addEventListener("submit", async (e) => {
   const password = document.getElementById("signupPass").value;
 
   try {
-    const result = await amplify.Auth.signUp({
+    const result = await AuthApi.signUp({
       username: email,
       password,
       attributes: {
@@ -358,7 +364,7 @@ verifyForm.addEventListener("submit", async (e) => {
   const code = document.getElementById("verifyCode").value.trim();
 
   try {
-    await amplify.Auth.confirmSignUp(email, code);
+    await AuthApi.confirmSignUp(email, code);
     verifyForm.reset();
     showMessage("Email verified. You can log in now.", false);
   } catch (err) {
@@ -374,7 +380,7 @@ loginForm.addEventListener("submit", async (e) => {
   const password = document.getElementById("loginPass").value;
 
   try {
-    await amplify.Auth.signIn(email, password);
+    await AuthApi.signIn(email, password);
     loginForm.reset();
     showMessage("Logged in.", false);
     await renderAuthState();
@@ -385,7 +391,7 @@ loginForm.addEventListener("submit", async (e) => {
 
 logoutBtn.addEventListener("click", async () => {
   if (!hasConfig) return;
-  await amplify.Auth.signOut();
+  await AuthApi.signOut();
   showMessage("Logged out.", false);
   await renderAuthState();
 });
