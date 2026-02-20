@@ -33,6 +33,7 @@ This is beginner-safe: if you are totally new to tech, start with **Week 0** fir
 - `resources/` -> free and practical learning links/topics
 - `templates/` -> trackers and planning templates
 - `tools/` -> environment setup and workflow
+- `docs/` -> GitHub Pages website (account + progress tracker)
 
 ## 12-Week Plan (Quick View)
 - **Week 0 (Prep):** Computer + terminal + Git/GitHub + learning setup
@@ -47,6 +48,20 @@ Read full plan here: [`week-by-week/12-week-roadmap.md`](week-by-week/12-week-ro
 Beginner prep here: [`week-by-week/week-0-foundation.md`](week-by-week/week-0-foundation.md)
 Week 0 links here: [`resources/week-0-beginner-resources.md`](resources/week-0-beginner-resources.md)
 Week 0 checklist here: [`templates/week-0-daily-checklist.md`](templates/week-0-daily-checklist.md)
+
+## GitHub Pages Learning Tracker
+- Website source: [`docs/index.html`](docs/index.html)
+- Features:
+  - Create account / log in
+  - Track Week 0 to Week 12 completion
+  - Add daily learning logs with hours
+  - View completion %, total hours, and streak
+  - Set weekly hour goal
+  - Export/import your progress data
+
+Important:
+- GitHub Pages is static, so accounts are stored in the user's browser (`localStorage`), not on a central server.
+- To avoid losing progress, users should export data regularly.
 
 ## Projects You Will Build
 1. Analytics Dashboard with KPI storytelling
