@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260220-10" />
+  <link rel="stylesheet" href="styles.css?v=20260220-12" />
 </head>
 <body>
   <div class="bg-shape bg-shape-1" aria-hidden="true"></div>
@@ -39,6 +39,84 @@
         <button id="openSignupBtn" type="button" class="secondary">Sign Up</button>
       </div>
     </header>
+
+    <section class="panel beginner-hub">
+      <div class="section-head">
+        <h2>Beginner Learning Hub</h2>
+        <p class="muted">Start from zero. Learn step by step without leaving this platform.</p>
+      </div>
+
+      <div class="hub-grid">
+        <article class="hub-card">
+          <h3>Start Here (Week 0)</h3>
+          <ol>
+            <li>Learn file/folder basics and terminal commands.</li>
+            <li>Create your first GitHub repo and push one commit.</li>
+            <li>Run your first Python script from terminal.</li>
+            <li>Repeat from memory and track weak points.</li>
+          </ol>
+          <p><a href="https://github.com/codedbyabhishek/data-analytics-to-data-engineer-3-months/blob/main/week-by-week/week-0-foundation.md" target="_blank" rel="noreferrer">Open complete Week 0 guide</a></p>
+        </article>
+
+        <article class="hub-card">
+          <h3>Daily Study Formula</h3>
+          <ol>
+            <li>Learn one concept (30-45 min).</li>
+            <li>Practice it with one small task (45-60 min).</li>
+            <li>Build one mini output (30-60 min).</li>
+            <li>Write notes + commit your work.</li>
+          </ol>
+          <p class="muted">Goal: 3-4 focused hours daily for strong growth.</p>
+        </article>
+
+        <article class="hub-card">
+          <h3>Core Skills You Will Learn</h3>
+          <ul>
+            <li>Python for data work</li>
+            <li>SQL for analysis and querying</li>
+            <li>Dashboards and data storytelling</li>
+            <li>ETL pipelines and orchestration</li>
+            <li>Cloud-ready data engineering foundations</li>
+          </ul>
+        </article>
+      </div>
+
+      <div class="quick-lessons">
+        <article class="lesson-card">
+          <h3>Terminal Cheat Sheet</h3>
+          <pre><code>pwd        # show current folder
+ls         # list files
+cd folder  # enter folder
+mkdir x    # create folder
+touch a.py # create file</code></pre>
+        </article>
+
+        <article class="lesson-card">
+          <h3>Git Quick Start</h3>
+          <pre><code>git init
+git add .
+git commit -m "first commit"
+git remote add origin &lt;repo-url&gt;
+git push -u origin main</code></pre>
+        </article>
+
+        <article class="lesson-card">
+          <h3>Python Starter Script</h3>
+          <pre><code>nums = [10, 20, 30]
+total = sum(nums)
+avg = total / len(nums)
+print("Total:", total)
+print("Average:", avg)</code></pre>
+        </article>
+      </div>
+
+      <div class="hub-links">
+        <a href="https://github.com/codedbyabhishek/data-analytics-to-data-engineer-3-months/blob/main/week-by-week/12-week-roadmap.md" target="_blank" rel="noreferrer">12-Week Roadmap</a>
+        <a href="https://github.com/codedbyabhishek/data-analytics-to-data-engineer-3-months/blob/main/resources/free-learning-resources.md" target="_blank" rel="noreferrer">Learning Resources</a>
+        <a href="https://github.com/codedbyabhishek/data-analytics-to-data-engineer-3-months/blob/main/templates/week-0-daily-checklist.md" target="_blank" rel="noreferrer">Week 0 Checklist</a>
+        <a href="https://github.com/codedbyabhishek/data-analytics-to-data-engineer-3-months/blob/main/tools/setup.md" target="_blank" rel="noreferrer">Tool Setup Guide</a>
+      </div>
+    </section>
 
     <section id="setupNotice" class="panel hidden">
       <h2>Setup Required</h2>

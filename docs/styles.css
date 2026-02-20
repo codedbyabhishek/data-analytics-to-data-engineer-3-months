@@ -312,6 +312,86 @@ button.secondary,
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
 }
 
+.beginner-hub {
+  margin-top: 1rem;
+}
+
+.hub-grid {
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.hub-card {
+  border: 1px solid #dae4f3;
+  border-radius: 12px;
+  padding: 0.75rem;
+  background: #fcfdff;
+}
+
+.hub-card h3 {
+  margin: 0 0 0.35rem;
+}
+
+.hub-card ol,
+.hub-card ul {
+  margin: 0 0 0.5rem;
+  padding-left: 1.1rem;
+}
+
+.quick-lessons {
+  margin-top: 0.85rem;
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.lesson-card {
+  border: 1px solid #d8e2f2;
+  border-radius: 12px;
+  padding: 0.75rem;
+  background: #ffffff;
+}
+
+.lesson-card h3 {
+  margin: 0 0 0.35rem;
+}
+
+.lesson-card pre {
+  margin: 0;
+  border: 1px solid #d8e2f2;
+  border-radius: 8px;
+  padding: 0.55rem;
+  background: #f7f9fd;
+  overflow: auto;
+}
+
+.lesson-card code {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.8rem;
+}
+
+.hub-links {
+  margin-top: 0.85rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.hub-links a {
+  text-decoration: none;
+  border: 1px solid #cfe0fb;
+  background: #f5f9ff;
+  border-radius: 999px;
+  padding: 0.36rem 0.62rem;
+  color: #264a8d;
+  font-size: 0.86rem;
+}
+
+.hub-links a:hover {
+  background: #eaf2ff;
+}
+
 .plan-card {
   border: 1px solid #d8e2f2;
   border-radius: 12px;
@@ -726,6 +806,11 @@ button:disabled {
 
   table {
     min-width: 560px;
+  }
+
+  .hub-grid,
+  .quick-lessons {
+    grid-template-columns: 1fr;
   }
 
   .site-header .site-shell,
