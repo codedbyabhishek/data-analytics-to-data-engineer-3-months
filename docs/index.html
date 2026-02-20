@@ -3,11 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Data Journey Tracker</title>
+  <title id="pageTitle">Data Journey Tracker | Learn Data Analytics, Data Engineering, and More</title>
+  <meta id="metaDescription" name="description" content="Professional learning platform for beginners: structured roadmaps, daily tracking, certificates, and progress dashboards." />
+  <link id="canonicalLink" rel="canonical" href="https://codedbyabhishek.github.io/data-analytics-to-data-engineer-3-months/" />
+  <meta id="ogTitle" property="og:title" content="Data Journey Tracker" />
+  <meta id="ogDescription" property="og:description" content="Learn from beginner to professional with guided roadmaps and analytics." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://codedbyabhishek.github.io/data-analytics-to-data-engineer-3-months/" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260220-12" />
+  <link rel="stylesheet" href="styles.css?v=20260220-13" />
 </head>
 <body>
   <div class="bg-shape bg-shape-1" aria-hidden="true"></div>
@@ -15,32 +21,50 @@
 
   <header class="site-header">
     <div class="site-shell">
-      <a class="site-brand" href="/">Data Journey Tracker</a>
+      <a class="site-brand" href="#/">Data Journey Tracker</a>
       <nav class="site-nav" aria-label="Primary">
-        <a href="#authSection">Auth</a>
+        <a href="#courses">Courses</a>
+        <a href="#authSection">Login</a>
         <a href="#appSection">Dashboard</a>
+        <a href="#adminSection">Admin</a>
         <a href="https://github.com/codedbyabhishek/data-analytics-to-data-engineer-3-months" target="_blank" rel="noreferrer">GitHub</a>
       </nav>
     </div>
   </header>
 
-  <main class="container">
-    <header class="hero">
-      <p class="eyebrow">12-Week Roadmap</p>
-      <h1>Data Analytics to Data Engineer Tracker</h1>
-      <p class="subtitle">Create your account, track daily learning, and monitor your progress from Week 0 to Week 12 across devices.</p>
+  <main class="container" id="home">
+    <header class="hero" id="heroSection">
+      <p class="eyebrow">SaaS Learning Platform</p>
+      <h1>Learn From Zero to Professional With One Structured Platform</h1>
+      <p class="subtitle">Pick a roadmap, create your account, complete weekly tasks, track daily progress, and generate shareable certificates.</p>
       <div class="hero-meta">
-        <span class="chip">Cloud Synced</span>
-        <span class="chip">AWS Cognito Auth</span>
-        <span class="chip">Beginner to Pro</span>
+        <span class="chip">Clear Roadmaps</span>
+        <span class="chip">Progress Analytics</span>
+        <span class="chip">AWS Cloud Synced</span>
       </div>
       <div class="hero-actions">
-        <button id="openLoginBtn" type="button">Log In</button>
-        <button id="openSignupBtn" type="button" class="secondary">Sign Up</button>
+        <button id="openSignupBtn" type="button">Start Free</button>
+        <button id="openLoginBtn" type="button" class="secondary">Log In</button>
+        <a class="cta-link" href="#courses">Explore Courses</a>
       </div>
     </header>
 
-    <section class="panel beginner-hub">
+    <section class="panel value-grid" id="platformHighlights">
+      <article class="value-card">
+        <h2>Everything In One Place</h2>
+        <p class="muted">Beginner lessons, weekly tasks, references, logs, goal tracking, and certificates live in a single workflow.</p>
+      </article>
+      <article class="value-card">
+        <h2>Built for Daily Momentum</h2>
+        <p class="muted">Track each day, maintain streaks, and move from confusion to consistency with a clear study system.</p>
+      </article>
+      <article class="value-card">
+        <h2>Career-Focused Output</h2>
+        <p class="muted">Complete measurable milestones and share achievements on LinkedIn and other platforms.</p>
+      </article>
+    </section>
+
+    <section class="panel beginner-hub" id="courses">
       <div class="section-head">
         <h2>Beginner Learning Hub</h2>
         <p class="muted">Start from zero. Learn step by step without leaving this platform.</p>
@@ -50,8 +74,8 @@
         <article class="hub-card">
           <h3>Start Here (Week 0)</h3>
           <ol>
-            <li>Learn file/folder basics and terminal commands.</li>
-            <li>Create your first GitHub repo and push one commit.</li>
+            <li>Learn file and folder basics with terminal commands.</li>
+            <li>Create your first GitHub repository and push one commit.</li>
             <li>Run your first Python script from terminal.</li>
             <li>Repeat from memory and track weak points.</li>
           </ol>
@@ -62,26 +86,26 @@
           <h3>Daily Study Formula</h3>
           <ol>
             <li>Learn one concept (30-45 min).</li>
-            <li>Practice it with one small task (45-60 min).</li>
+            <li>Practice with one small task (45-60 min).</li>
             <li>Build one mini output (30-60 min).</li>
-            <li>Write notes + commit your work.</li>
+            <li>Write notes and commit your work.</li>
           </ol>
-          <p class="muted">Goal: 3-4 focused hours daily for strong growth.</p>
+          <p class="muted">Target: 3-4 focused hours daily for 12 weeks.</p>
         </article>
 
         <article class="hub-card">
           <h3>Core Skills You Will Learn</h3>
           <ul>
-            <li>Python for data work</li>
+            <li>Python for data workflows</li>
             <li>SQL for analysis and querying</li>
-            <li>Dashboards and data storytelling</li>
+            <li>Dashboards and storytelling</li>
             <li>ETL pipelines and orchestration</li>
-            <li>Cloud-ready data engineering foundations</li>
+            <li>Cloud-ready data engineering fundamentals</li>
           </ul>
         </article>
       </div>
 
-      <div class="quick-lessons">
+      <div class="quick-lessons" id="internalResources">
         <article class="lesson-card">
           <h3>Terminal Cheat Sheet</h3>
           <pre><code>pwd        # show current folder
@@ -133,7 +157,7 @@ print("Average:", avg)</code></pre>
 
     <section id="authSection" class="panel hidden">
       <div class="auth-head">
-        <h2>Welcome Back</h2>
+        <h2>Create Account or Continue Learning</h2>
         <div class="auth-switch">
           <button id="tabLoginBtn" type="button" class="secondary">Log In</button>
           <button id="tabSignupBtn" type="button" class="secondary">Sign Up</button>
@@ -142,34 +166,34 @@ print("Average:", avg)</code></pre>
       </div>
 
       <div class="auth-grid">
-      <div class="auth-card auth-pane" id="signupPane">
-        <h2>Create Account</h2>
-        <p class="muted auth-copy">Start your learning account and sync progress across devices.</p>
-        <form id="signupForm" class="stack">
-          <label>Full Name<input required id="signupName" type="text" /></label>
-          <label>Email<input required id="signupEmail" type="email" /></label>
-          <label>Password<input required id="signupPass" type="password" minlength="6" /></label>
-          <button type="submit">Create Account</button>
-        </form>
-      </div>
-      <div class="auth-card auth-pane" id="loginPane">
-        <h2>Log In</h2>
-        <p class="muted auth-copy">Welcome back. Continue your weekly streak and milestones.</p>
-        <form id="loginForm" class="stack">
-          <label>Email<input required id="loginEmail" type="email" /></label>
-          <label>Password<input required id="loginPass" type="password" /></label>
-          <button type="submit">Log In</button>
-        </form>
-      </div>
-      <div class="auth-card auth-pane" id="verifyPane">
-        <h2>Verify Email</h2>
-        <p class="muted auth-copy">Enter the code sent to your email to activate your account.</p>
-        <form id="verifyForm" class="stack">
-          <label>Email<input required id="verifyEmail" type="email" /></label>
-          <label>Verification Code<input required id="verifyCode" type="text" /></label>
-          <button type="submit">Confirm Account</button>
-        </form>
-      </div>
+        <div class="auth-card auth-pane" id="signupPane">
+          <h2>Create Account</h2>
+          <p class="muted auth-copy">Start your learning account and sync progress across devices.</p>
+          <form id="signupForm" class="stack">
+            <label>Full Name<input required id="signupName" type="text" /></label>
+            <label>Email<input required id="signupEmail" type="email" /></label>
+            <label>Password<input required id="signupPass" type="password" minlength="6" /></label>
+            <button type="submit">Create Account</button>
+          </form>
+        </div>
+        <div class="auth-card auth-pane" id="loginPane">
+          <h2>Log In</h2>
+          <p class="muted auth-copy">Welcome back. Continue your weekly streak and milestones.</p>
+          <form id="loginForm" class="stack">
+            <label>Email<input required id="loginEmail" type="email" /></label>
+            <label>Password<input required id="loginPass" type="password" /></label>
+            <button type="submit">Log In</button>
+          </form>
+        </div>
+        <div class="auth-card auth-pane" id="verifyPane">
+          <h2>Verify Email</h2>
+          <p class="muted auth-copy">Enter the code sent to your email to activate your account.</p>
+          <form id="verifyForm" class="stack">
+            <label>Email<input required id="verifyEmail" type="email" /></label>
+            <label>Verification Code<input required id="verifyCode" type="text" /></label>
+            <button type="submit">Confirm Account</button>
+          </form>
+        </div>
       </div>
     </section>
 
@@ -193,7 +217,7 @@ print("Average:", avg)</code></pre>
         </div>
       </div>
 
-      <section class="stats-grid">
+      <section class="stats-grid" id="dashboard">
         <article class="panel stat">
           <p>Overall Completion</p>
           <h3 id="completionPct">0%</h3>
@@ -221,15 +245,15 @@ print("Average:", avg)</code></pre>
         <div id="plansGrid" class="plans-grid"></div>
       </section>
 
-      <section class="panel">
+      <section class="panel" id="roadmapSection">
         <div class="section-head">
           <h2>Week Roadmap</h2>
-          <p class="muted">Expand each week, complete tasks, and use references.</p>
+          <p class="muted">Expandable weeks, checklist tasks, references, and direct week permalinks.</p>
         </div>
         <div id="weeksGrid" class="weeks-grid"></div>
       </section>
 
-      <section class="panel">
+      <section class="panel" id="logsSection">
         <div class="section-head">
           <h2>Daily Learning Log</h2>
           <p class="muted">Log every focused session to keep momentum.</p>
@@ -276,7 +300,7 @@ print("Average:", avg)</code></pre>
       <section class="panel certificate-panel">
         <div class="section-head">
           <h2>Completion Certificate</h2>
-          <p class="muted">Unlock after all 13 weeks are marked complete.</p>
+          <p class="muted">Unlock after all weeks are marked complete for the active course.</p>
         </div>
         <div class="certificate-actions">
           <button id="generateCertBtn" type="button">Generate Certificate</button>
@@ -288,11 +312,46 @@ print("Average:", avg)</code></pre>
         <article id="certificateCard" class="certificate-card hidden"></article>
       </section>
 
-      <section class="panel admin-panel">
+      <section class="panel admin-panel" id="adminSection">
         <div class="section-head">
-          <h2>Course Config Admin</h2>
-          <p class="muted">JSON-based course builder (local admin mode)</p>
+          <h2>Admin Dashboard</h2>
+          <p class="muted">Analytics, catalog management, and SEO controls.</p>
         </div>
+
+        <div class="admin-analytics-grid">
+          <article class="admin-stat-card">
+            <p>Active Course Logs</p>
+            <h3 id="adminLogsCount">0</h3>
+          </article>
+          <article class="admin-stat-card">
+            <p>Average Hours / Session</p>
+            <h3 id="adminAvgHours">0</h3>
+          </article>
+          <article class="admin-stat-card">
+            <p>Top Topic</p>
+            <h3 id="adminTopTopic">-</h3>
+          </article>
+          <article class="admin-stat-card">
+            <p>Most Active Week</p>
+            <h3 id="adminTopWeek">-</h3>
+          </article>
+        </div>
+
+        <div class="admin-insights" id="adminInsights"></div>
+
+        <details>
+          <summary class="muted">Open SEO settings (meta title, description, canonical)</summary>
+          <form id="seoForm" class="seo-form">
+            <label>Meta Title<input id="metaTitleInput" type="text" maxlength="70" /></label>
+            <label>Meta Description<textarea id="metaDescriptionInput" rows="3" maxlength="170"></textarea></label>
+            <label>Canonical URL<input id="metaCanonicalInput" type="url" /></label>
+            <div class="admin-actions">
+              <button id="saveSeoBtn" type="submit">Save SEO</button>
+              <button id="resetSeoBtn" type="button" class="secondary">Reset SEO</button>
+            </div>
+          </form>
+        </details>
+
         <details>
           <summary class="muted">Open course config editor</summary>
           <div class="admin-actions">
@@ -313,12 +372,12 @@ print("Average:", avg)</code></pre>
 
   <script src="https://unpkg.com/aws-amplify@4.3.46/dist/aws-amplify.min.js"></script>
   <script src="aws-config.js?v=20260220-2"></script>
-  <script src="app.js?v=20260220-12"></script>
+  <script src="app.js?v=20260220-13"></script>
 
   <footer class="site-footer">
     <div class="site-shell footer-shell">
-      <p>Data Analytics to Data Engineer · 12-Week Tracker</p>
-      <p>Built for consistent daily learning and portfolio growth.</p>
+      <p>Data Journey Tracker · Multi-course learning SaaS foundation</p>
+      <p><a href="#home">Home</a> · <a href="#courses">Courses</a> · <a href="#dashboard">Dashboard</a> · <a href="#adminSection">Admin</a></p>
     </div>
   </footer>
 </body>

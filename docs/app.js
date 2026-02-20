@@ -1,5 +1,6 @@
 const DEFAULT_COURSE_ID = "analytics-to-de";
 const CATALOG_STORAGE_KEY = "dj_course_catalog_v1";
+const SEO_STORAGE_KEY = "dj_seo_settings_v1";
 const BILLING_ENABLED = false;
 
 const FALLBACK_CATALOG = {
@@ -118,6 +119,21 @@ const resetConfigBtn = document.getElementById("resetConfigBtn");
 const configEditor = document.getElementById("configEditor");
 const beginnerLessonsGrid = document.getElementById("beginnerLessonsGrid");
 const lessonProgressText = document.getElementById("lessonProgressText");
+const seoForm = document.getElementById("seoForm");
+const metaTitleInput = document.getElementById("metaTitleInput");
+const metaDescriptionInput = document.getElementById("metaDescriptionInput");
+const metaCanonicalInput = document.getElementById("metaCanonicalInput");
+const resetSeoBtn = document.getElementById("resetSeoBtn");
+const adminLogsCount = document.getElementById("adminLogsCount");
+const adminAvgHours = document.getElementById("adminAvgHours");
+const adminTopTopic = document.getElementById("adminTopTopic");
+const adminTopWeek = document.getElementById("adminTopWeek");
+const adminInsights = document.getElementById("adminInsights");
+const pageTitleEl = document.getElementById("pageTitle");
+const metaDescriptionEl = document.getElementById("metaDescription");
+const canonicalLinkEl = document.getElementById("canonicalLink");
+const ogTitleEl = document.getElementById("ogTitle");
+const ogDescriptionEl = document.getElementById("ogDescription");
 
 const config = window.AWS_CONFIG || {};
 const hasConfig = Boolean(config.REGION && config.USER_POOL_ID && config.USER_POOL_CLIENT_ID && config.API_BASE_URL);
@@ -147,12 +163,114 @@ let state = {
   plans: []
 };
 
+const DEFAULT_SEO = {
+  title: "Data Journey Tracker | Learn Data Analytics, Data Engineering, and More",
+  description:
+    "Professional learning platform for beginners: structured roadmaps, daily tracking, certificates, and progress dashboards.",
+  canonical: `${window.location.origin}${window.location.pathname}`
+};
+
 function showMessage(msg, isError = true) {
   messageEl.style.color = isError ? "#b42318" : "#00703c";
   messageEl.textContent = msg;
   setTimeout(() => {
     if (messageEl.textContent === msg) messageEl.textContent = "";
   }, 4000);
+}
+
+function weekPermalink(courseId, weekId) {
+  return `${window.location.origin}${window.location.pathname}#/course/${encodeURIComponent(courseId)}/week/${encodeURIComponent(String(weekId))}`;
+}
+
+function updateHash(path) {
+  if (!path || window.location.hash === path) return;
+  history.replaceState(null, "", `${window.location.pathname}${path}`);
+}
+
+function scrollToWeekCard(weekId) {
+  const el = document.getElementById(`week-card-${state.activeCourseId}-${weekId}`);
+  if (!el) return;
+  el.scrollIntoView({ behavior: "smooth", block: "start" });
+  const details = el.querySelector("details");
+  if (details) details.open = true;
+}
+
+function collectAnalytics() {
+  const logs = state.logs || [];
+  const totalLogs = logs.length;
+  const totalHoursValue = logs.reduce((sum, log) => sum + Number(log.hours || 0), 0);
+  const avgHours = totalLogs ? (totalHoursValue / totalLogs).toFixed(1) : "0";
+
+  const topicMap = {};
+  const weekMap = {};
+  for (const log of logs) {
+    const topic = String(log.topic || "").trim().toLowerCase();
+    if (topic) topicMap[topic] = (topicMap[topic] || 0) + 1;
+    const week = Number(log.weekNo);
+    if (!Number.isNaN(week)) weekMap[week] = (weekMap[week] || 0) + Number(log.hours || 0);
+  }
+
+  const topTopicEntry = Object.entries(topicMap).sort((a, b) => b[1] - a[1])[0];
+  const topWeekEntry = Object.entries(weekMap).sort((a, b) => b[1] - a[1])[0];
+
+  return {
+    totalLogs,
+    avgHours,
+    topTopic: topTopicEntry ? topTopicEntry[0] : "-",
+    topWeek: topWeekEntry ? `Week ${topWeekEntry[0]}` : "-",
+    topWeekHours: topWeekEntry ? Number(topWeekEntry[1]).toFixed(1) : "0.0"
+  };
+}
+
+function renderAdminAnalytics() {
+  if (!adminLogsCount || !adminAvgHours || !adminTopTopic || !adminTopWeek || !adminInsights) return;
+  const analytics = collectAnalytics();
+  const completion = Number((completionPct.textContent || "0").replace("%", "")) || 0;
+  const completedLessons = Object.values(activeCourseProgress().lessonProgress || {}).filter((row) => row?.completed).length;
+
+  adminLogsCount.textContent = String(analytics.totalLogs);
+  adminAvgHours.textContent = analytics.avgHours;
+  adminTopTopic.textContent = analytics.topTopic;
+  adminTopWeek.textContent = analytics.topWeek;
+
+  adminInsights.innerHTML = `
+    <div class="insight-row"><span>Completion Rate</span><strong>${completion}%</strong></div>
+    <div class="insight-row"><span>Most Active Week Hours</span><strong>${analytics.topWeekHours}h</strong></div>
+    <div class="insight-row"><span>Completed Beginner Lessons</span><strong>${completedLessons} / ${BEGINNER_LESSONS.length}</strong></div>
+    <div class="insight-row"><span>Active Course</span><strong>${getActiveCourse().title}</strong></div>
+  `;
+}
+
+function loadSeoSettings() {
+  const stored = localStorage.getItem(SEO_STORAGE_KEY);
+  if (!stored) return { ...DEFAULT_SEO };
+  try {
+    const parsed = JSON.parse(stored);
+    return {
+      title: parsed.title || DEFAULT_SEO.title,
+      description: parsed.description || DEFAULT_SEO.description,
+      canonical: parsed.canonical || DEFAULT_SEO.canonical
+    };
+  } catch {
+    return { ...DEFAULT_SEO };
+  }
+}
+
+function applySeoSettings(settings) {
+  const next = {
+    title: settings?.title || DEFAULT_SEO.title,
+    description: settings?.description || DEFAULT_SEO.description,
+    canonical: settings?.canonical || DEFAULT_SEO.canonical
+  };
+  document.title = next.title;
+  if (pageTitleEl) pageTitleEl.textContent = next.title;
+  if (metaDescriptionEl) metaDescriptionEl.setAttribute("content", next.description);
+  if (canonicalLinkEl) canonicalLinkEl.setAttribute("href", next.canonical);
+  if (ogTitleEl) ogTitleEl.setAttribute("content", next.title);
+  if (ogDescriptionEl) ogDescriptionEl.setAttribute("content", next.description);
+  if (metaTitleInput) metaTitleInput.value = next.title;
+  if (metaDescriptionInput) metaDescriptionInput.value = next.description;
+  if (metaCanonicalInput) metaCanonicalInput.value = next.canonical;
 }
 
 function validateCatalogShape(catalog) {
@@ -219,11 +337,48 @@ function getActiveCourse() {
   return COURSE_MAP[state.activeCourseId] || COURSES[0];
 }
 
-function setAuthPane(pane) {
+function setAuthPane(pane, updateRoute = true) {
   const panes = { signup: signupPane, login: loginPane, verify: verifyPane };
   const tabs = { signup: tabSignupBtn, login: tabLoginBtn, verify: tabVerifyBtn };
   Object.entries(panes).forEach(([k, el]) => el && el.classList.toggle("hidden", k !== pane));
   Object.entries(tabs).forEach(([k, el]) => el && el.classList.toggle("active", k === pane));
+  if (updateRoute) updateHash(`#/auth/${pane}`);
+}
+
+function parseHashRoute() {
+  const hash = window.location.hash || "";
+  const matchCourse = hash.match(/^#\/course\/([^/]+)(?:\/week\/([^/]+))?$/);
+  if (matchCourse) {
+    return {
+      type: "course",
+      courseId: decodeURIComponent(matchCourse[1]),
+      weekId: matchCourse[2] ? decodeURIComponent(matchCourse[2]) : null
+    };
+  }
+  const matchAuth = hash.match(/^#\/auth\/(login|signup|verify)$/);
+  if (matchAuth) return { type: "auth", pane: matchAuth[1] };
+  if (hash === "#/dashboard") return { type: "dashboard" };
+  return { type: "default" };
+}
+
+function applyRoute() {
+  const route = parseHashRoute();
+  if (route.type === "auth") {
+    authSection.classList.remove("hidden");
+    setAuthPane(route.pane, false);
+    return;
+  }
+  if (route.type === "course" && COURSE_MAP[route.courseId]) {
+    state.activeCourseId = route.courseId;
+    if (courseSelect) courseSelect.value = route.courseId;
+    populateWeekSelect();
+    if (state.progress) renderWeeks();
+    if (route.weekId !== null) scrollToWeekCard(route.weekId);
+    return;
+  }
+  if (route.type === "dashboard") {
+    document.getElementById("dashboard")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 }
 
 function defaultCompletedWeeks(courseId) {
@@ -458,6 +613,8 @@ function renderWeeks() {
 
     const card = document.createElement("article");
     card.className = `week-card week-expand ${isDone ? "done" : ""}`;
+    card.id = `week-card-${course.id}-${week.id}`;
+    const permalink = weekPermalink(course.id, week.id);
 
     card.innerHTML = `
       <details>
@@ -496,6 +653,11 @@ function renderWeeks() {
               .map((ref) => `<li><a href="${absoluteOrRepoUrl(ref.url)}" target="_blank" rel="noreferrer">${ref.label}</a></li>`)
               .join("")}
           </ul>
+        </div>
+
+        <div class="week-links">
+          <a class="inline-link" href="#/course/${encodeURIComponent(course.id)}/week/${encodeURIComponent(String(week.id))}">Open Week Link</a>
+          <button type="button" class="inline-btn copy-week-link" data-week-link="${permalink}">Copy Permalink</button>
         </div>
       </details>
     `;
@@ -536,6 +698,29 @@ function renderWeeks() {
         showMessage(err.message);
         e.target.checked = !e.target.checked;
       }
+    });
+  });
+
+  weeksGrid.querySelectorAll(".copy-week-link").forEach((el) => {
+    el.addEventListener("click", async (e) => {
+      const url = e.currentTarget.dataset.weekLink;
+      if (!url) return;
+      try {
+        await navigator.clipboard.writeText(url);
+        showMessage("Week permalink copied.", false);
+      } catch {
+        showMessage("Could not copy week permalink.");
+      }
+    });
+  });
+
+  weeksGrid.querySelectorAll("details").forEach((detailsEl) => {
+    detailsEl.addEventListener("toggle", () => {
+      if (!detailsEl.open) return;
+      const parent = detailsEl.closest(".week-card");
+      if (!parent?.id) return;
+      const raw = parent.id.replace(`week-card-${state.activeCourseId}-`, "");
+      updateHash(`#/course/${encodeURIComponent(state.activeCourseId)}/week/${encodeURIComponent(raw)}`);
     });
   });
 }
@@ -589,6 +774,7 @@ function renderStats() {
   const firstWeek = weeks[0];
   const hoursMap = calculateWeekHours(state.logs);
   goalStatus.textContent = `Goal: ${cp.goalWeeklyHours}h/week. ${firstWeek.title} logged: ${hoursMap[firstWeek.id] || 0}h.`;
+  renderAdminAnalytics();
 }
 
 function renderCertificate() {
@@ -715,6 +901,7 @@ function renderApp(user) {
   renderCertificate();
   renderBilling();
   renderBeginnerLessons();
+  applyRoute();
 }
 
 async function renderAuthState() {
@@ -734,7 +921,8 @@ async function renderAuthState() {
   } catch {
     authSection.classList.remove("hidden");
     appSection.classList.add("hidden");
-    setAuthPane("login");
+    const route = parseHashRoute();
+    setAuthPane(route.type === "auth" ? route.pane : "login", false);
     return;
   }
 
@@ -762,6 +950,7 @@ courseSelect?.addEventListener("change", async () => {
     await persistProgress(next);
     await loadLogsForActiveCourse();
     renderApp(await AuthApi.currentAuthenticatedUser());
+    updateHash(`#/course/${encodeURIComponent(nextCourseId)}`);
     showMessage(`Switched to ${COURSE_MAP[nextCourseId].title}.`, false);
   } catch (err) {
     showMessage(err.message);
@@ -1050,6 +1239,24 @@ exportConfigBtn?.addEventListener("click", () => {
   URL.revokeObjectURL(url);
 });
 
+seoForm?.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const next = {
+    title: metaTitleInput?.value?.trim() || DEFAULT_SEO.title,
+    description: metaDescriptionInput?.value?.trim() || DEFAULT_SEO.description,
+    canonical: metaCanonicalInput?.value?.trim() || DEFAULT_SEO.canonical
+  };
+  localStorage.setItem(SEO_STORAGE_KEY, JSON.stringify(next));
+  applySeoSettings(next);
+  showMessage("SEO settings updated.", false);
+});
+
+resetSeoBtn?.addEventListener("click", () => {
+  localStorage.removeItem(SEO_STORAGE_KEY);
+  applySeoSettings(DEFAULT_SEO);
+  showMessage("SEO settings reset.", false);
+});
+
 beginnerLessonsGrid?.addEventListener("click", async (e) => {
   const button = e.target.closest("button[data-action]");
   if (!button) return;
@@ -1121,11 +1328,13 @@ resetConfigBtn?.addEventListener("click", async () => {
 openLoginBtn?.addEventListener("click", () => {
   authSection.classList.remove("hidden");
   setAuthPane("login");
+  authSection.scrollIntoView({ behavior: "smooth", block: "start" });
   loginForm?.querySelector("input")?.focus();
 });
 openSignupBtn?.addEventListener("click", () => {
   authSection.classList.remove("hidden");
   setAuthPane("signup");
+  authSection.scrollIntoView({ behavior: "smooth", block: "start" });
   signupForm?.querySelector("input")?.focus();
 });
 tabLoginBtn?.addEventListener("click", () => setAuthPane("login"));
@@ -1133,7 +1342,9 @@ tabSignupBtn?.addEventListener("click", () => setAuthPane("signup"));
 tabVerifyBtn?.addEventListener("click", () => setAuthPane("verify"));
 
 document.getElementById("logDate").value = new Date().toISOString().split("T")[0];
-setAuthPane("login");
+setAuthPane("login", false);
+applySeoSettings(loadSeoSettings());
+window.addEventListener("hashchange", applyRoute);
 
 (async () => {
   await loadCatalog();
@@ -1141,5 +1352,6 @@ setAuthPane("login");
 
   if (!renderSharedCertificateViewFromUrl()) {
     await renderAuthState();
+    applyRoute();
   }
 })();
