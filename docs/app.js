@@ -22,6 +22,11 @@ const messageEl = document.getElementById("message");
 const signupForm = document.getElementById("signupForm");
 const loginForm = document.getElementById("loginForm");
 const verifyForm = document.getElementById("verifyForm");
+const openLoginBtn = document.getElementById("openLoginBtn");
+const openSignupBtn = document.getElementById("openSignupBtn");
+const tabLoginBtn = document.getElementById("tabLoginBtn");
+const tabSignupBtn = document.getElementById("tabSignupBtn");
+const tabVerifyBtn = document.getElementById("tabVerifyBtn");
 const logoutBtn = document.getElementById("logoutBtn");
 const exportBtn = document.getElementById("exportBtn");
 const importInput = document.getElementById("importInput");
@@ -42,6 +47,9 @@ const logWeek = document.getElementById("logWeek");
 const goalHours = document.getElementById("goalHours");
 const saveGoalBtn = document.getElementById("saveGoalBtn");
 const goalStatus = document.getElementById("goalStatus");
+const signupPane = document.getElementById("signupPane");
+const loginPane = document.getElementById("loginPane");
+const verifyPane = document.getElementById("verifyPane");
 
 const config = window.AWS_CONFIG || {};
 const hasConfig = Boolean(
@@ -72,6 +80,28 @@ let state = {
   progress: null,
   logs: []
 };
+
+function setAuthPane(pane) {
+  const panes = {
+    signup: signupPane,
+    login: loginPane,
+    verify: verifyPane
+  };
+  const tabs = {
+    signup: tabSignupBtn,
+    login: tabLoginBtn,
+    verify: tabVerifyBtn
+  };
+
+  Object.entries(panes).forEach(([key, el]) => {
+    if (!el) return;
+    el.classList.toggle("hidden", key !== pane);
+  });
+  Object.entries(tabs).forEach(([key, el]) => {
+    if (!el) return;
+    el.classList.toggle("active", key === pane);
+  });
+}
 
 function showMessage(msg, isError = true) {
   messageEl.style.color = isError ? "#b42318" : "#00703c";
@@ -311,6 +341,7 @@ async function renderAuthState() {
   } catch {
     authSection.classList.remove("hidden");
     appSection.classList.add("hidden");
+    setAuthPane("login");
     return;
   }
 
@@ -347,6 +378,7 @@ signupForm.addEventListener("submit", async (e) => {
     if (!result.userConfirmed) {
       showMessage("Account created. Check your email for verification code.", false);
       document.getElementById("verifyEmail").value = email;
+      setAuthPane("verify");
       return;
     }
 
@@ -393,6 +425,7 @@ logoutBtn.addEventListener("click", async () => {
   if (!hasConfig) return;
   await AuthApi.signOut();
   showMessage("Logged out.", false);
+  setAuthPane("login");
   await renderAuthState();
 });
 
@@ -514,4 +547,18 @@ importInput.addEventListener("change", async (e) => {
 
 populateWeekSelect();
 document.getElementById("logDate").value = new Date().toISOString().split("T")[0];
+setAuthPane("login");
+openLoginBtn?.addEventListener("click", () => {
+  authSection.classList.remove("hidden");
+  setAuthPane("login");
+  loginForm?.querySelector("input")?.focus();
+});
+openSignupBtn?.addEventListener("click", () => {
+  authSection.classList.remove("hidden");
+  setAuthPane("signup");
+  signupForm?.querySelector("input")?.focus();
+});
+tabLoginBtn?.addEventListener("click", () => setAuthPane("login"));
+tabSignupBtn?.addEventListener("click", () => setAuthPane("signup"));
+tabVerifyBtn?.addEventListener("click", () => setAuthPane("verify"));
 renderAuthState();

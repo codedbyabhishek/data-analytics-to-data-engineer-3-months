@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260220-3" />
+  <link rel="stylesheet" href="styles.css?v=20260220-4" />
 </head>
 <body>
   <div class="bg-shape bg-shape-1" aria-hidden="true"></div>
@@ -23,6 +23,10 @@
         <span class="chip">AWS Cognito Auth</span>
         <span class="chip">Beginner to Pro</span>
       </div>
+      <div class="hero-actions">
+        <button id="openLoginBtn" type="button">Log In</button>
+        <button id="openSignupBtn" type="button" class="secondary">Sign Up</button>
+      </div>
     </header>
 
     <section id="setupNotice" class="panel hidden">
@@ -30,8 +34,18 @@
       <p class="muted">AWS config is missing. Add your values to <code>docs/aws-config.js</code> using <code>docs/aws-config.example.js</code>.</p>
     </section>
 
-    <section id="authSection" class="panel auth-grid hidden">
-      <div class="auth-card">
+    <section id="authSection" class="panel hidden">
+      <div class="auth-head">
+        <h2>Welcome Back</h2>
+        <div class="auth-switch">
+          <button id="tabLoginBtn" type="button" class="secondary">Log In</button>
+          <button id="tabSignupBtn" type="button" class="secondary">Sign Up</button>
+          <button id="tabVerifyBtn" type="button" class="secondary">Verify</button>
+        </div>
+      </div>
+
+      <div class="auth-grid">
+      <div class="auth-card auth-pane" id="signupPane">
         <h2>Create Account</h2>
         <p class="muted auth-copy">Start your learning account and sync progress across devices.</p>
         <form id="signupForm" class="stack">
@@ -41,7 +55,7 @@
           <button type="submit">Create Account</button>
         </form>
       </div>
-      <div class="auth-card">
+      <div class="auth-card auth-pane" id="loginPane">
         <h2>Log In</h2>
         <p class="muted auth-copy">Welcome back. Continue your weekly streak and milestones.</p>
         <form id="loginForm" class="stack">
@@ -50,7 +64,7 @@
           <button type="submit">Log In</button>
         </form>
       </div>
-      <div class="auth-card">
+      <div class="auth-card auth-pane" id="verifyPane">
         <h2>Verify Email</h2>
         <p class="muted auth-copy">Enter the code sent to your email to activate your account.</p>
         <form id="verifyForm" class="stack">
@@ -58,6 +72,7 @@
           <label>Verification Code<input required id="verifyCode" type="text" /></label>
           <button type="submit">Confirm Account</button>
         </form>
+      </div>
       </div>
     </section>
 
@@ -155,6 +170,6 @@
 
   <script src="https://unpkg.com/aws-amplify@4.3.46/dist/aws-amplify.min.js"></script>
   <script src="aws-config.js?v=20260220-2"></script>
-  <script src="app.js?v=20260220-2"></script>
+  <script src="app.js?v=20260220-4"></script>
 </body>
 </html>
