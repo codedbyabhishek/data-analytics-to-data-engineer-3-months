@@ -25,3 +25,18 @@ pip install pandas numpy matplotlib seaborn sqlalchemy psycopg2-binary jupyter
 - Keep raw and processed data separate
 - Write a README for each project
 - Add simple tests for pipeline steps
+
+## Beginner First-Run Check
+Run these commands and confirm no errors:
+
+```bash
+python3 --version
+git --version
+mkdir -p week0-practice && cd week0-practice
+echo "hello data journey" > notes.txt
+git init
+git add notes.txt
+git commit -m "week0 first commit"
+```
+
+If this works, your base setup is ready.

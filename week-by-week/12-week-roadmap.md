@@ -1,5 +1,7 @@
 # 12-Week Roadmap (Zero to Professional Foundations)
 
+If you are completely new to tech, complete `week-0-foundation.md` first.
+
 ## Week 1: Data + Python Basics
 - Install tools and IDE
 - Python basics: variables, loops, functions, file I/O
@@ -9,6 +11,13 @@
 Deliverable:
 - `week1_python_basics.ipynb` + GitHub commit
 
+Beginner daily flow:
+- Day 1: Python syntax + 10 tiny exercises
+- Day 2: Functions and loops
+- Day 3: Files and CSV basics
+- Day 4: Small data cleaning task
+- Day 5: Review + rewrite from scratch
+
 ## Week 2: SQL Fundamentals
 - SELECT, WHERE, GROUP BY, JOINs, CTEs, window functions
 - Query performance basics and indexing intro
@@ -16,6 +25,13 @@ Deliverable:
 
 Deliverable:
 - `week2_sql_challenges.sql` with documented solutions
+
+Beginner daily flow:
+- Day 1: SELECT, WHERE, ORDER BY
+- Day 2: GROUP BY and aggregates
+- Day 3: JOINs (inner, left)
+- Day 4: CTEs and window functions intro
+- Day 5: Practice set and review
 
 ## Week 3: Data Analytics Workflow
 - Data cleaning and EDA in pandas
@@ -102,6 +118,13 @@ Deliverable:
 - 1 project increment shipped
 - 1 retrospective written
 - 1 public GitHub update posted
+
+## If You Get Stuck
+- Reduce scope: solve one tiny subtask only.
+- Use 45-minute focus blocks with 10-minute breaks.
+- Ask: "What input, process, output does this step need?"
+- Rebuild from scratch the next day without copy-paste.
+- Do not skip two days in a row.
 
 ## Minimum Skill Checklist by End
 - SQL: joins, windows, query tuning basics

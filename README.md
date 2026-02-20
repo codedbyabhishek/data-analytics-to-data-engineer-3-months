@@ -2,15 +2,23 @@
 
 A practical, project-based roadmap for going from zero to professional-level foundations in **Data Analytics + Data Engineering** in 12 weeks of disciplined work.
 
+This is beginner-safe: if you are totally new to tech, start with **Week 0** first.
+
 ## Who this is for
 - Absolute beginners who can commit to hard work for 3 months.
 - Career switchers who want portfolio-ready projects.
 - Analysts who want to level up into data engineering.
 
+## If You Are a Complete Beginner
+- Start with `week-by-week/week-0-foundation.md` before Week 1.
+- Week 0 covers computer basics, terminal basics, Git/GitHub basics, and study habits.
+- If Week 0 feels hard, repeat it once. That is normal.
+
 ## Commitment
 - **Daily:** 3-4 focused hours
 - **Weekly:** 20-30 hours
 - **Duration:** 12 weeks
+- **Optional for absolute beginners:** 1 prep week (Week 0)
 
 ## Outcomes by Week 12
 - Strong SQL + Python for analytics and data pipelines
@@ -27,7 +35,8 @@ A practical, project-based roadmap for going from zero to professional-level fou
 - `tools/` -> environment setup and workflow
 
 ## 12-Week Plan (Quick View)
-- **Weeks 1-2:** Foundations (Python, SQL, Git, data basics)
+- **Week 0 (Prep):** Computer + terminal + Git/GitHub + learning setup
+- **Weeks 1-2:** Foundations (Python, SQL, data basics)
 - **Weeks 3-4:** Analytics workflow (EDA, BI dashboards, metrics)
 - **Weeks 5-6:** Data modeling and warehousing fundamentals
 - **Weeks 7-8:** Batch pipelines + orchestration
@@ -35,6 +44,7 @@ A practical, project-based roadmap for going from zero to professional-level fou
 - **Weeks 11-12:** Portfolio polish + interview prep + capstone
 
 Read full plan here: [`week-by-week/12-week-roadmap.md`](week-by-week/12-week-roadmap.md)
+Beginner prep here: [`week-by-week/week-0-foundation.md`](week-by-week/week-0-foundation.md)
 
 ## Projects You Will Build
 1. Analytics Dashboard with KPI storytelling
@@ -49,6 +59,12 @@ See project briefs in [`projects/`](projects/).
 3. Build project feature (60-90 min)
 4. Write notes + commit to GitHub (15-30 min)
 
+If new to tech, use this simpler routine in Week 0:
+1. Follow one small tutorial step-by-step (30-45 min)
+2. Repeat it from memory (30 min)
+3. Do one tiny task alone (30-45 min)
+4. Write what was confusing and what worked (15 min)
+
 ## Rules for Success
 - Build every week, do not only watch tutorials.
 - Push code daily with clear commit messages.
@@ -57,8 +73,9 @@ See project briefs in [`projects/`](projects/).
 
 ## How to Start
 1. Follow setup: [`tools/setup.md`](tools/setup.md)
-2. Open roadmap: [`week-by-week/12-week-roadmap.md`](week-by-week/12-week-roadmap.md)
-3. Start Week 1 and log daily progress.
+2. If fully new, finish: [`week-by-week/week-0-foundation.md`](week-by-week/week-0-foundation.md)
+3. Open roadmap: [`week-by-week/12-week-roadmap.md`](week-by-week/12-week-roadmap.md)
+4. Start Week 1 and log daily progress.
 
 ## Optional Extensions (After Week 12)
 - dbt advanced modeling
