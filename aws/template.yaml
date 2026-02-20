@@ -20,6 +20,10 @@ Parameters:
   StripePriceTeam:
     Type: String
     Default: ""
+  StripeWebhookSecret:
+    Type: String
+    Default: ""
+    NoEcho: true
 
 Globals:
   Function:
@@ -141,6 +145,7 @@ Resources:
           STRIPE_SECRET_KEY: !Ref StripeSecretKey
           STRIPE_PRICE_PRO: !Ref StripePricePro
           STRIPE_PRICE_TEAM: !Ref StripePriceTeam
+          STRIPE_WEBHOOK_SECRET: !Ref StripeWebhookSecret
       Events:
         GetProfile:
           Type: HttpApi
@@ -214,6 +219,14 @@ Resources:
             ApiId: !Ref Api
             Path: /billing/set-plan
             Method: POST
+        BillingStripeWebhook:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Path: /billing/stripe-webhook
+            Method: POST
+            Auth:
+              Authorizer: NONE
 
 Outputs:
   ApiBaseUrl:

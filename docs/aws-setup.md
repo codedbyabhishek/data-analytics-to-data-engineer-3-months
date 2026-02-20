@@ -33,6 +33,7 @@ During `sam deploy --guided`:
   - `StripeSecretKey`
   - `StripePricePro`
   - `StripePriceTeam`
+  - `StripeWebhookSecret`
 
 After deploy, copy outputs:
 - `ApiBaseUrl`
@@ -65,3 +66,15 @@ GitHub Pages workflow already deploys from `docs/`.
 ## Notes
 - Keep CORS origin strict in production.
 - DynamoDB uses on-demand billing in this template.
+
+## Stripe Webhook Setup
+1. Open Stripe Dashboard -> Developers -> Webhooks.
+2. Add endpoint:
+   - `https://<your-api-id>.execute-api.<region>.amazonaws.com/billing/stripe-webhook`
+3. Subscribe to events:
+   - `checkout.session.completed`
+   - `customer.subscription.created`
+   - `customer.subscription.updated`
+   - `customer.subscription.deleted`
+4. Copy webhook signing secret (`whsec_...`).
+5. Re-deploy SAM with `StripeWebhookSecret` set to this value.

@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { randomUUID, createHmac, timingSafeEqual } from "node:crypto";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
   DynamoDBDocumentClient,
@@ -19,6 +19,7 @@ const DEFAULT_COURSE_ID = "analytics-to-de";
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || "";
 const STRIPE_PRICE_PRO = process.env.STRIPE_PRICE_PRO || "";
 const STRIPE_PRICE_TEAM = process.env.STRIPE_PRICE_TEAM || "";
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || "";
 const APP_BASE_URL = process.env.APP_BASE_URL || "https://codedbyabhishek.github.io/data-analytics-to-data-engineer-3-months/";
 
 const WEEK_IDS = Array.from({ length: 13 }, (_, i) => i);
@@ -104,6 +105,117 @@ function stripePriceForPlan(planId) {
   return "";
 }
 
+function planFromPriceId(priceId = "") {
+  if (priceId && priceId === STRIPE_PRICE_PRO) return "pro";
+  if (priceId && priceId === STRIPE_PRICE_TEAM) return "team";
+  return "free";
+}
+
+function getHeader(headers = {}, key = "") {
+  const foundKey = Object.keys(headers).find((k) => k.toLowerCase() === key.toLowerCase());
+  return foundKey ? headers[foundKey] : "";
+}
+
+function verifyStripeSignature(rawBody, stripeSignature) {
+  if (!STRIPE_WEBHOOK_SECRET) throw new Error("Stripe webhook secret is not configured");
+  if (!stripeSignature) throw new Error("Missing Stripe-Signature header");
+
+  const parts = stripeSignature.split(",").map((p) => p.trim());
+  const timestamp = parts.find((p) => p.startsWith("t="))?.slice(2);
+  const signatures = parts.filter((p) => p.startsWith("v1=")).map((p) => p.slice(3));
+  if (!timestamp || !signatures.length) throw new Error("Invalid Stripe signature header");
+
+  const payload = `${timestamp}.${rawBody}`;
+  const expected = createHmac("sha256", STRIPE_WEBHOOK_SECRET).update(payload).digest("hex");
+
+  return signatures.some((sig) => {
+    try {
+      return timingSafeEqual(Buffer.from(sig, "hex"), Buffer.from(expected, "hex"));
+    } catch {
+      return false;
+    }
+  });
+}
+
+async function setUserSubscription({
+  userId,
+  email = "",
+  plan = "free",
+  status = "active",
+  stripeCustomerId = "",
+  stripeSubscriptionId = ""
+}) {
+  const now = new Date().toISOString();
+  await ddb.send(
+    new UpdateCommand({
+      TableName: PROFILES_TABLE,
+      Key: { userId },
+      UpdateExpression:
+        "SET subscriptionPlan = :plan, subscriptionStatus = :status, subscriptionUpdatedAt = :ts, updatedAt = :ts, email = :email, stripeCustomerId = :customerId, stripeSubscriptionId = :subscriptionId",
+      ExpressionAttributeValues: {
+        ":plan": plan,
+        ":status": status,
+        ":ts": now,
+        ":email": email,
+        ":customerId": stripeCustomerId,
+        ":subscriptionId": stripeSubscriptionId
+      }
+    })
+  );
+  return now;
+}
+
+async function handleStripeEvent(evt) {
+  const type = evt?.type || "";
+  const object = evt?.data?.object || {};
+
+  if (type === "checkout.session.completed") {
+    const userId = object?.metadata?.userId || object?.client_reference_id || "";
+    const planId = object?.metadata?.planId || "free";
+    if (!userId) return;
+
+    await setUserSubscription({
+      userId,
+      email: object?.customer_details?.email || "",
+      plan: ["pro", "team"].includes(planId) ? planId : "free",
+      status: "active",
+      stripeCustomerId: object?.customer || "",
+      stripeSubscriptionId: object?.subscription || ""
+    });
+    return;
+  }
+
+  if (type === "customer.subscription.updated" || type === "customer.subscription.created") {
+    const userId = object?.metadata?.userId || "";
+    if (!userId) return;
+    const priceId = object?.items?.data?.[0]?.price?.id || "";
+    const plan = planFromPriceId(priceId);
+    const status = object?.status || "active";
+
+    await setUserSubscription({
+      userId,
+      plan,
+      status,
+      stripeCustomerId: object?.customer || "",
+      stripeSubscriptionId: object?.id || ""
+    });
+    return;
+  }
+
+  if (type === "customer.subscription.deleted") {
+    const userId = object?.metadata?.userId || "";
+    if (!userId) return;
+
+    await setUserSubscription({
+      userId,
+      plan: "free",
+      status: "canceled",
+      stripeCustomerId: object?.customer || "",
+      stripeSubscriptionId: object?.id || ""
+    });
+  }
+}
+
 function response(statusCode, body) {
   return {
     statusCode,
@@ -144,6 +256,8 @@ async function getOrCreateProfile(userId, email) {
     email,
     subscriptionPlan: "free",
     subscriptionStatus: "active",
+    stripeCustomerId: "",
+    stripeSubscriptionId: "",
     subscriptionUpdatedAt: now,
     createdAt: now,
     updatedAt: now
@@ -250,6 +364,20 @@ export const handler = async (event) => {
   try {
     const method = event.requestContext?.http?.method;
     const path = event.rawPath;
+
+    if (method === "POST" && path === "/billing/stripe-webhook") {
+      const rawBody = event.isBase64Encoded ? Buffer.from(event.body || "", "base64").toString("utf8") : event.body || "";
+      const stripeSig = getHeader(event.headers || {}, "stripe-signature");
+      const verified = verifyStripeSignature(rawBody, stripeSig);
+      if (!verified) {
+        return response(400, { error: "Invalid Stripe signature" });
+      }
+
+      const stripeEvent = JSON.parse(rawBody || "{}");
+      await handleStripeEvent(stripeEvent);
+      return response(200, { received: true });
+    }
+
     const { userId, email } = getUser(event);
 
     if (method === "GET" && path === "/profile") {
@@ -325,20 +453,7 @@ export const handler = async (event) => {
       }
 
       const now = new Date().toISOString();
-      await ddb.send(
-        new UpdateCommand({
-          TableName: PROFILES_TABLE,
-          Key: { userId },
-          UpdateExpression:
-            "SET subscriptionPlan = :plan, subscriptionStatus = :status, subscriptionUpdatedAt = :ts, updatedAt = :ts, email = :email",
-          ExpressionAttributeValues: {
-            ":plan": plan,
-            ":status": status,
-            ":ts": now,
-            ":email": email
-          }
-        })
-      );
+      await setUserSubscription({ userId, email, plan, status });
 
       return response(200, { ok: true, plan, status, updatedAt: now });
     }

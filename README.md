@@ -73,8 +73,11 @@ Important:
   - `StripeSecretKey`
   - `StripePricePro`
   - `StripePriceTeam`
+  - `StripeWebhookSecret`
   - `AppBaseUrl`
 - If Stripe values are empty, billing checkout endpoints return a clear configuration error.
+- Webhook endpoint (for Stripe events):
+  - `POST /billing/stripe-webhook` (signature-verified, unauthenticated route)
 
 ## Projects You Will Build
 1. Analytics Dashboard with KPI storytelling
