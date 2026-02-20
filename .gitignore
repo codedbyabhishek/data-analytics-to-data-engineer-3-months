@@ -7,3 +7,5 @@ __pycache__/
 *.log
 data/raw/
 data/processed/
+aws/.aws-sam/
+aws/lambda/node_modules/
