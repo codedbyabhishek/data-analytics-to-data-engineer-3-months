@@ -2,6 +2,10 @@
 
 If you have zero technical background, do this week before Week 1.
 
+Use along with:
+- Resource links: `resources/week-0-beginner-resources.md`
+- Daily tracker: `templates/week-0-daily-checklist.md`
+
 ## Goal
 By the end of Week 0, you should be able to:
 - Use your computer file system confidently.

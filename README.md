@@ -45,6 +45,8 @@ This is beginner-safe: if you are totally new to tech, start with **Week 0** fir
 
 Read full plan here: [`week-by-week/12-week-roadmap.md`](week-by-week/12-week-roadmap.md)
 Beginner prep here: [`week-by-week/week-0-foundation.md`](week-by-week/week-0-foundation.md)
+Week 0 links here: [`resources/week-0-beginner-resources.md`](resources/week-0-beginner-resources.md)
+Week 0 checklist here: [`templates/week-0-daily-checklist.md`](templates/week-0-daily-checklist.md)
 
 ## Projects You Will Build
 1. Analytics Dashboard with KPI storytelling
