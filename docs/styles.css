@@ -392,6 +392,57 @@ button.secondary,
   background: #eaf2ff;
 }
 
+.beginner-interactive {
+  margin-top: 0.95rem;
+}
+
+.lessons-grid {
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+}
+
+.lesson-module {
+  border: 1px solid #d6e1f2;
+  border-radius: 12px;
+  padding: 0.75rem;
+  background: #fff;
+}
+
+.lesson-module h4 {
+  margin: 0 0 0.25rem;
+}
+
+.lesson-module .mini {
+  font-size: 0.84rem;
+}
+
+.lesson-quiz {
+  margin-top: 0.5rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.lesson-quiz label {
+  display: flex;
+  gap: 0.45rem;
+  align-items: flex-start;
+  font-size: 0.9rem;
+}
+
+.lesson-actions {
+  margin-top: 0.55rem;
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.lesson-result {
+  margin-top: 0.45rem;
+  font-size: 0.86rem;
+  color: #355289;
+}
+
 .plan-card {
   border: 1px solid #d8e2f2;
   border-radius: 12px;

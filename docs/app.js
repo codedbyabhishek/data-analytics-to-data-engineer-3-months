@@ -27,6 +27,38 @@ const FALLBACK_CATALOG = {
   ]
 };
 
+const BEGINNER_LESSONS = [
+  {
+    id: "terminal-basics",
+    title: "Terminal Basics",
+    summary: "Understand how to navigate files and folders from command line.",
+    question: "Which command shows your current folder path?",
+    options: ["ls", "pwd", "cd", "mkdir"],
+    answerIndex: 1
+  },
+  {
+    id: "git-first-commit",
+    title: "Git First Commit",
+    summary: "Learn the minimum Git flow to save and track your work.",
+    question: "Which sequence is correct for first local commit?",
+    options: [
+      "git push -> git init -> git add .",
+      "git add . -> git commit -> git init",
+      "git init -> git add . -> git commit -m \"...\"",
+      "git status -> git push -> git commit"
+    ],
+    answerIndex: 2
+  },
+  {
+    id: "python-run",
+    title: "Run Python Script",
+    summary: "Execute your Python file and verify output in terminal.",
+    question: "Which command typically runs a Python script named app.py?",
+    options: ["node app.py", "python3 app.py", "git run app.py", "pip app.py"],
+    answerIndex: 1
+  }
+];
+
 let CATALOG = FALLBACK_CATALOG;
 let COURSES = FALLBACK_CATALOG.courses;
 let COURSE_MAP = Object.fromEntries(COURSES.map((c) => [c.id, c]));
@@ -84,6 +116,8 @@ const applyConfigBtn = document.getElementById("applyConfigBtn");
 const exportConfigBtn = document.getElementById("exportConfigBtn");
 const resetConfigBtn = document.getElementById("resetConfigBtn");
 const configEditor = document.getElementById("configEditor");
+const beginnerLessonsGrid = document.getElementById("beginnerLessonsGrid");
+const lessonProgressText = document.getElementById("lessonProgressText");
 
 const config = window.AWS_CONFIG || {};
 const hasConfig = Boolean(config.REGION && config.USER_POOL_ID && config.USER_POOL_CLIENT_ID && config.API_BASE_URL);
@@ -211,7 +245,8 @@ function createCourseProgress(courseId) {
     goalWeeklyHours: 20,
     completedWeeks: defaultCompletedWeeks(courseId),
     taskProgress: defaultTaskProgress(courseId),
-    certificate: null
+    certificate: null,
+    lessonProgress: {}
   };
 }
 
@@ -585,6 +620,56 @@ function renderCertificate() {
   `;
 }
 
+function lessonState() {
+  const cp = activeCourseProgress();
+  if (!cp.lessonProgress || typeof cp.lessonProgress !== "object") {
+    cp.lessonProgress = {};
+  }
+  return cp.lessonProgress;
+}
+
+function renderBeginnerLessons() {
+  if (!beginnerLessonsGrid || !lessonProgressText) return;
+  const progress = lessonState();
+
+  let completedCount = 0;
+  for (const lesson of BEGINNER_LESSONS) {
+    if (progress[lesson.id]?.completed) completedCount += 1;
+  }
+  lessonProgressText.textContent = `${completedCount} / ${BEGINNER_LESSONS.length} completed`;
+
+  beginnerLessonsGrid.innerHTML = "";
+  for (const lesson of BEGINNER_LESSONS) {
+    const lState = progress[lesson.id] || {};
+    const card = document.createElement("article");
+    card.className = "lesson-module";
+    card.innerHTML = `
+      <h4>${lesson.title}</h4>
+      <p class="mini muted">${lesson.summary}</p>
+      <div class="lesson-quiz">
+        <p class="mini"><strong>Quiz:</strong> ${lesson.question}</p>
+        ${lesson.options
+          .map(
+            (opt, idx) => `
+          <label>
+            <input type="radio" name="quiz-${lesson.id}" value="${idx}" ${Number(lState.selected) === idx ? "checked" : ""}>
+            <span>${opt}</span>
+          </label>`
+          )
+          .join("")}
+      </div>
+      <div class="lesson-actions">
+        <button type="button" class="secondary" data-action="check-quiz" data-lesson-id="${lesson.id}">Check Quiz</button>
+        <button type="button" data-action="mark-lesson" data-lesson-id="${lesson.id}" ${lState.completed ? "disabled" : ""}>
+          ${lState.completed ? "Completed" : "Mark Complete"}
+        </button>
+      </div>
+      <p class="lesson-result">${lState.message || ""}</p>
+    `;
+    beginnerLessonsGrid.appendChild(card);
+  }
+}
+
 function renderBilling() {
   if (!BILLING_ENABLED) {
     if (billingPanel) billingPanel.classList.add("hidden");
@@ -629,6 +714,7 @@ function renderApp(user) {
   renderLogs();
   renderCertificate();
   renderBilling();
+  renderBeginnerLessons();
 }
 
 async function renderAuthState() {
@@ -962,6 +1048,56 @@ exportConfigBtn?.addEventListener("click", () => {
   a.download = "course-catalog.json";
   a.click();
   URL.revokeObjectURL(url);
+});
+
+beginnerLessonsGrid?.addEventListener("click", async (e) => {
+  const button = e.target.closest("button[data-action]");
+  if (!button) return;
+
+  const lessonId = button.dataset.lessonId;
+  const action = button.dataset.action;
+  const lesson = BEGINNER_LESSONS.find((l) => l.id === lessonId);
+  if (!lesson) return;
+
+  const card = button.closest(".lesson-module");
+  const selectedEl = card?.querySelector(`input[name="quiz-${lessonId}"]:checked`);
+  const selected = selectedEl ? Number(selectedEl.value) : null;
+
+  const next = structuredClone(state.progress);
+  const lp = next.courses[state.activeCourseId].lessonProgress || {};
+  if (!lp[lessonId]) lp[lessonId] = { completed: false, score: 0, selected: null, message: "" };
+  lp[lessonId].selected = selected;
+
+  if (action === "check-quiz") {
+    if (selected === null) {
+      lp[lessonId].message = "Please select an answer first.";
+    } else if (selected === lesson.answerIndex) {
+      lp[lessonId].score = 1;
+      lp[lessonId].message = "Correct answer. Great work.";
+    } else {
+      lp[lessonId].score = 0;
+      lp[lessonId].message = "Not correct yet. Review and try again.";
+    }
+  }
+
+  if (action === "mark-lesson") {
+    if (selected === lesson.answerIndex) {
+      lp[lessonId].completed = true;
+      lp[lessonId].score = 1;
+      lp[lessonId].message = "Lesson completed successfully.";
+    } else {
+      lp[lessonId].message = "Pass the quiz first, then mark complete.";
+    }
+  }
+
+  next.courses[state.activeCourseId].lessonProgress = lp;
+
+  try {
+    await persistProgress(next);
+    renderBeginnerLessons();
+  } catch (err) {
+    showMessage(err.message || "Could not save lesson progress.");
+  }
 });
 
 resetConfigBtn?.addEventListener("click", async () => {
