@@ -21,6 +21,7 @@ const messageEl = document.getElementById("message");
 
 const signupForm = document.getElementById("signupForm");
 const loginForm = document.getElementById("loginForm");
+const verifyForm = document.getElementById("verifyForm");
 const logoutBtn = document.getElementById("logoutBtn");
 const exportBtn = document.getElementById("exportBtn");
 const importInput = document.getElementById("importInput");
@@ -42,11 +43,26 @@ const goalHours = document.getElementById("goalHours");
 const saveGoalBtn = document.getElementById("saveGoalBtn");
 const goalStatus = document.getElementById("goalStatus");
 
-const config = window.APP_CONFIG || {};
-const hasConfig = Boolean(config.SUPABASE_URL && config.SUPABASE_ANON_KEY);
-const supabase = hasConfig
-  ? window.supabase.createClient(config.SUPABASE_URL, config.SUPABASE_ANON_KEY)
-  : null;
+const config = window.AWS_CONFIG || {};
+const hasConfig = Boolean(
+  config.REGION &&
+  config.USER_POOL_ID &&
+  config.USER_POOL_CLIENT_ID &&
+  config.API_BASE_URL
+);
+
+const amplify = window.aws_amplify;
+if (hasConfig) {
+  amplify.Amplify.configure({
+    Auth: {
+      region: config.REGION,
+      userPoolId: config.USER_POOL_ID,
+      userPoolWebClientId: config.USER_POOL_CLIENT_ID,
+      mandatorySignIn: true,
+      authenticationFlowType: "USER_PASSWORD_AUTH"
+    }
+  });
+}
 
 let state = {
   profile: null,
@@ -74,7 +90,7 @@ function createDefaultWeeks() {
 
 function calcStreak(logs) {
   if (!logs.length) return 0;
-  const daySet = new Set(logs.map((l) => l.log_date));
+  const daySet = new Set(logs.map((l) => l.logDate));
   const date = new Date();
   let streak = 0;
 
@@ -104,12 +120,10 @@ function calculateWeekHours(logs) {
   for (const wk of WEEK_DEFS) {
     hoursMap[wk.id] = 0;
   }
-
   for (const log of logs) {
-    const w = Number(log.week_no);
+    const w = Number(log.weekNo);
     hoursMap[w] = Number(hoursMap[w] || 0) + Number(log.hours || 0);
   }
-
   return hoursMap;
 }
 
@@ -123,63 +137,49 @@ function populateWeekSelect() {
   }
 }
 
-async function ensureUserRows(user, fullNameFromSignup = "") {
-  const fallbackName = fullNameFromSignup || user.user_metadata?.full_name || user.email || "Learner";
-
-  const { error: profileError } = await supabase
-    .from("profiles")
-    .upsert({ user_id: user.id, full_name: fallbackName }, { onConflict: "user_id" });
-
-  if (profileError) throw profileError;
-
-  const { data: progressRow, error: progressReadError } = await supabase
-    .from("user_progress")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (progressReadError) throw progressReadError;
-
-  if (!progressRow) {
-    const { error: progressInsertError } = await supabase.from("user_progress").insert({
-      user_id: user.id,
-      goal_weekly_hours: 20,
-      completed_weeks_json: createDefaultWeeks()
-    });
-    if (progressInsertError) throw progressInsertError;
-  }
+async function getToken() {
+  const session = await amplify.Auth.currentSession();
+  return session.getIdToken().getJwtToken();
 }
 
-async function loadState(user) {
-  const [{ data: profile, error: profileError }, { data: progress, error: progressError }, { data: logs, error: logsError }] =
-    await Promise.all([
-      supabase.from("profiles").select("full_name, created_at").eq("user_id", user.id).single(),
-      supabase
-        .from("user_progress")
-        .select("goal_weekly_hours, completed_weeks_json")
-        .eq("user_id", user.id)
-        .single(),
-      supabase
-        .from("learning_logs")
-        .select("id, log_date, week_no, topic, hours, notes")
-        .eq("user_id", user.id)
-        .order("log_date", { ascending: false })
-    ]);
+async function apiFetch(path, options = {}) {
+  const token = await getToken();
+  const response = await fetch(`${config.API_BASE_URL}${path}`, {
+    ...options,
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${token}`,
+      ...(options.headers || {})
+    }
+  });
 
-  if (profileError) throw profileError;
-  if (progressError) throw progressError;
-  if (logsError) throw logsError;
+  const text = await response.text();
+  const payload = text ? JSON.parse(text) : {};
+
+  if (!response.ok) {
+    throw new Error(payload.error || `Request failed (${response.status})`);
+  }
+
+  return payload;
+}
+
+async function loadState() {
+  const [profile, progress, logsPayload] = await Promise.all([
+    apiFetch("/profile"),
+    apiFetch("/progress"),
+    apiFetch("/logs")
+  ]);
 
   state = {
     profile,
     progress,
-    logs
+    logs: logsPayload.logs || []
   };
 }
 
 function renderWeeks() {
   weeksGrid.innerHTML = "";
-  const completed = state.progress.completed_weeks_json || createDefaultWeeks();
+  const completed = state.progress.completedWeeks || createDefaultWeeks();
   const hoursMap = calculateWeekHours(state.logs);
 
   for (const wk of WEEK_DEFS) {
@@ -202,23 +202,25 @@ function renderWeeks() {
 
     const checkbox = card.querySelector(`#${safeId}`);
     checkbox.addEventListener("change", async (e) => {
-      const next = { ...(state.progress.completed_weeks_json || createDefaultWeeks()) };
+      const next = { ...(state.progress.completedWeeks || createDefaultWeeks()) };
       next[wk.id] = e.target.checked;
 
-      const { error } = await supabase
-        .from("user_progress")
-        .update({ completed_weeks_json: next })
-        .eq("user_id", (await supabase.auth.getUser()).data.user.id);
+      try {
+        const updated = await apiFetch("/progress", {
+          method: "PUT",
+          body: JSON.stringify({
+            goalWeeklyHours: Number(state.progress.goalWeeklyHours || 20),
+            completedWeeks: next
+          })
+        });
 
-      if (error) {
-        showMessage(error.message);
+        state.progress = updated;
+        renderStats();
+        renderWeeks();
+      } catch (err) {
+        showMessage(err.message);
         e.target.checked = !e.target.checked;
-        return;
       }
-
-      state.progress.completed_weeks_json = next;
-      renderStats();
-      renderWeeks();
     });
 
     weeksGrid.appendChild(card);
@@ -231,8 +233,8 @@ function renderLogs() {
   for (const log of state.logs) {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${log.log_date}</td>
-      <td>Week ${log.week_no}</td>
+      <td>${log.logDate}</td>
+      <td>Week ${log.weekNo}</td>
       <td>${log.topic}</td>
       <td>${log.hours}</td>
       <td>${log.notes || "-"}</td>
@@ -243,24 +245,22 @@ function renderLogs() {
 
   logsBody.querySelectorAll(".delete-log").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      const id = btn.dataset.id;
-      const { error } = await supabase.from("learning_logs").delete().eq("id", id);
-      if (error) {
-        showMessage(error.message);
-        return;
+      try {
+        await apiFetch(`/logs/${btn.dataset.id}`, { method: "DELETE" });
+        state.logs = state.logs.filter((l) => l.id !== btn.dataset.id);
+        renderStats();
+        renderWeeks();
+        renderLogs();
+        showMessage("Log removed.", false);
+      } catch (err) {
+        showMessage(err.message);
       }
-
-      state.logs = state.logs.filter((l) => l.id !== id);
-      renderStats();
-      renderWeeks();
-      renderLogs();
-      showMessage("Log removed.", false);
     });
   });
 }
 
 function renderStats() {
-  const completed = state.progress.completed_weeks_json || createDefaultWeeks();
+  const completed = state.progress.completedWeeks || createDefaultWeeks();
   const doneCount = Object.values(completed).filter(Boolean).length;
   const totalWeeks = WEEK_DEFS.length;
   const percent = Math.round((doneCount / totalWeeks) * 100);
@@ -273,16 +273,16 @@ function renderStats() {
   streakCount.textContent = `${streak} day${streak === 1 ? "" : "s"}`;
   weeksDone.textContent = `${doneCount} / ${totalWeeks}`;
 
-  const goal = Number(state.progress.goal_weekly_hours || 20);
+  const goal = Number(state.progress.goalWeeklyHours || 20);
   const week0Hours = calculateWeekHours(state.logs)[0] || 0;
   goalStatus.textContent = `Goal: ${goal}h/week. Week 0 currently logged: ${week0Hours}h.`;
 }
 
 function renderApp(user) {
-  const fullName = state.profile.full_name || user.email;
+  const fullName = state.profile.fullName || user.attributes.name || user.attributes.email;
   welcomeText.textContent = `Welcome, ${fullName}`;
-  joinedText.textContent = `Email: ${user.email} | Joined: ${new Date(state.profile.created_at).toLocaleDateString()}`;
-  goalHours.value = state.progress.goal_weekly_hours || 20;
+  joinedText.textContent = `Email: ${user.attributes.email} | Joined: ${new Date(state.profile.createdAt).toLocaleDateString()}`;
+  goalHours.value = state.progress.goalWeeklyHours || 20;
 
   renderStats();
   renderWeeks();
@@ -299,10 +299,10 @@ async function renderAuthState() {
 
   setupNotice.classList.add("hidden");
 
-  const { data } = await supabase.auth.getSession();
-  const user = data.session?.user;
-
-  if (!user) {
+  let user;
+  try {
+    user = await amplify.Auth.currentAuthenticatedUser();
+  } catch {
     authSection.classList.remove("hidden");
     appSection.classList.add("hidden");
     return;
@@ -312,8 +312,7 @@ async function renderAuthState() {
   appSection.classList.remove("hidden");
 
   try {
-    await ensureUserRows(user);
-    await loadState(user);
+    await loadState();
     renderApp(user);
   } catch (err) {
     showMessage(err.message || "Could not load account data.");
@@ -328,37 +327,43 @@ signupForm.addEventListener("submit", async (e) => {
   const email = document.getElementById("signupEmail").value.trim();
   const password = document.getElementById("signupPass").value;
 
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: { full_name: fullName }
-    }
-  });
+  try {
+    const result = await amplify.Auth.signUp({
+      username: email,
+      password,
+      attributes: {
+        email,
+        name: fullName
+      }
+    });
 
-  if (error) {
-    showMessage(error.message);
-    return;
-  }
-
-  if (data.user) {
-    try {
-      await ensureUserRows(data.user, fullName);
-    } catch (rowError) {
-      showMessage(rowError.message);
+    signupForm.reset();
+    if (!result.userConfirmed) {
+      showMessage("Account created. Check your email for verification code.", false);
+      document.getElementById("verifyEmail").value = email;
       return;
     }
+
+    showMessage("Account created. Please log in.", false);
+  } catch (err) {
+    showMessage(err.message || "Signup failed.");
   }
+});
 
-  signupForm.reset();
+verifyForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!hasConfig) return;
 
-  if (!data.session) {
-    showMessage("Account created. Check your email and verify before login.", false);
-    return;
+  const email = document.getElementById("verifyEmail").value.trim();
+  const code = document.getElementById("verifyCode").value.trim();
+
+  try {
+    await amplify.Auth.confirmSignUp(email, code);
+    verifyForm.reset();
+    showMessage("Email verified. You can log in now.", false);
+  } catch (err) {
+    showMessage(err.message || "Verification failed.");
   }
-
-  showMessage("Account created and logged in.", false);
-  await renderAuthState();
 });
 
 loginForm.addEventListener("submit", async (e) => {
@@ -368,20 +373,19 @@ loginForm.addEventListener("submit", async (e) => {
   const email = document.getElementById("loginEmail").value.trim();
   const password = document.getElementById("loginPass").value;
 
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) {
-    showMessage(error.message);
-    return;
+  try {
+    await amplify.Auth.signIn(email, password);
+    loginForm.reset();
+    showMessage("Logged in.", false);
+    await renderAuthState();
+  } catch (err) {
+    showMessage(err.message || "Login failed.");
   }
-
-  loginForm.reset();
-  showMessage("Logged in.", false);
-  await renderAuthState();
 });
 
 logoutBtn.addEventListener("click", async () => {
   if (!hasConfig) return;
-  await supabase.auth.signOut();
+  await amplify.Auth.signOut();
   showMessage("Logged out.", false);
   await renderAuthState();
 });
@@ -390,44 +394,34 @@ logForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   if (!hasConfig) return;
 
-  const date = document.getElementById("logDate").value;
-  const week = Number(logWeek.value);
+  const logDate = document.getElementById("logDate").value;
+  const weekNo = Number(logWeek.value);
   const topic = document.getElementById("logTopic").value.trim();
   const hours = Number(document.getElementById("logHours").value);
   const notes = document.getElementById("logNotes").value.trim();
 
-  if (!date || !topic || !hours || hours <= 0) {
+  if (!logDate || !topic || !hours || hours <= 0) {
     showMessage("Fill date, topic, and valid hours.");
     return;
   }
 
-  const user = (await supabase.auth.getUser()).data.user;
-  const { data, error } = await supabase
-    .from("learning_logs")
-    .insert({
-      user_id: user.id,
-      log_date: date,
-      week_no: week,
-      topic,
-      hours,
-      notes
-    })
-    .select("id, log_date, week_no, topic, hours, notes")
-    .single();
+  try {
+    const created = await apiFetch("/logs", {
+      method: "POST",
+      body: JSON.stringify({ logDate, weekNo, topic, hours, notes })
+    });
 
-  if (error) {
-    showMessage(error.message);
-    return;
+    state.logs.unshift(created);
+    logForm.reset();
+    document.getElementById("logDate").value = new Date().toISOString().split("T")[0];
+
+    renderStats();
+    renderWeeks();
+    renderLogs();
+    showMessage("Learning log added.", false);
+  } catch (err) {
+    showMessage(err.message);
   }
-
-  state.logs.unshift(data);
-  logForm.reset();
-  document.getElementById("logDate").value = new Date().toISOString().split("T")[0];
-
-  renderStats();
-  renderWeeks();
-  renderLogs();
-  showMessage("Learning log added.", false);
 });
 
 saveGoalBtn.addEventListener("click", async () => {
@@ -439,45 +433,48 @@ saveGoalBtn.addEventListener("click", async () => {
     return;
   }
 
-  const user = (await supabase.auth.getUser()).data.user;
-  const { error } = await supabase
-    .from("user_progress")
-    .update({ goal_weekly_hours: goal })
-    .eq("user_id", user.id);
+  try {
+    const updated = await apiFetch("/progress", {
+      method: "PUT",
+      body: JSON.stringify({
+        goalWeeklyHours: goal,
+        completedWeeks: state.progress.completedWeeks || createDefaultWeeks()
+      })
+    });
 
-  if (error) {
-    showMessage(error.message);
-    return;
+    state.progress = updated;
+    renderStats();
+    showMessage("Goal updated.", false);
+  } catch (err) {
+    showMessage(err.message);
   }
-
-  state.progress.goal_weekly_hours = goal;
-  renderStats();
-  showMessage("Goal updated.", false);
 });
 
 exportBtn.addEventListener("click", async () => {
   if (!hasConfig) return;
-  const user = (await supabase.auth.getUser()).data.user;
-  if (!user) return;
 
-  const payload = JSON.stringify(
-    {
-      exported_at: new Date().toISOString(),
-      profile: state.profile,
-      progress: state.progress,
-      logs: state.logs
-    },
-    null,
-    2
-  );
+  try {
+    const payload = JSON.stringify(
+      {
+        exportedAt: new Date().toISOString(),
+        profile: state.profile,
+        progress: state.progress,
+        logs: state.logs
+      },
+      null,
+      2
+    );
 
-  const blob = new Blob([payload], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `tracker-${user.email.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
+    const blob = new Blob([payload], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "tracker-export.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    showMessage(err.message);
+  }
 });
 
 importInput.addEventListener("change", async (e) => {
@@ -489,54 +486,25 @@ importInput.addEventListener("change", async (e) => {
     const text = await file.text();
     const imported = JSON.parse(text);
 
-    if (!imported.progress?.completed_weeks_json || !Array.isArray(imported.logs)) {
+    if (!imported.progress?.completedWeeks || !Array.isArray(imported.logs)) {
       throw new Error("Invalid import file format.");
     }
 
-    const user = (await supabase.auth.getUser()).data.user;
+    await apiFetch("/import", {
+      method: "POST",
+      body: JSON.stringify(imported)
+    });
 
-    const { error: updateProgressError } = await supabase
-      .from("user_progress")
-      .update({
-        goal_weekly_hours: Number(imported.progress.goal_weekly_hours || 20),
-        completed_weeks_json: imported.progress.completed_weeks_json
-      })
-      .eq("user_id", user.id);
-
-    if (updateProgressError) throw updateProgressError;
-
-    const { error: deleteLogsError } = await supabase.from("learning_logs").delete().eq("user_id", user.id);
-    if (deleteLogsError) throw deleteLogsError;
-
-    if (imported.logs.length) {
-      const rows = imported.logs.map((l) => ({
-        user_id: user.id,
-        log_date: l.log_date,
-        week_no: Number(l.week_no),
-        topic: l.topic,
-        hours: Number(l.hours),
-        notes: l.notes || ""
-      }));
-
-      const { error: insertLogsError } = await supabase.from("learning_logs").insert(rows);
-      if (insertLogsError) throw insertLogsError;
-    }
-
-    await loadState(user);
+    await loadState();
+    const user = await amplify.Auth.currentAuthenticatedUser();
     renderApp(user);
     showMessage("Data imported successfully.", false);
   } catch (err) {
-    showMessage(err.message || "Could not import this file.");
+    showMessage(err.message || "Could not import file.");
   }
 
   importInput.value = "";
 });
-
-if (hasConfig) {
-  supabase.auth.onAuthStateChange(async () => {
-    await renderAuthState();
-  });
-}
 
 populateWeekSelect();
 document.getElementById("logDate").value = new Date().toISOString().split("T")[0];

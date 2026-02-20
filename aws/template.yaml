@@ -1,0 +1,183 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Data Journey Tracker API (Cognito + Lambda + DynamoDB)
+
+Parameters:
+  AllowedOrigin:
+    Type: String
+    Default: "*"
+    Description: CORS origin for API requests (set to your GitHub Pages URL in production)
+
+Globals:
+  Function:
+    Runtime: nodejs20.x
+    Timeout: 20
+    MemorySize: 256
+
+Resources:
+  ProfilesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      TableName: data-journey-profiles
+      AttributeDefinitions:
+        - AttributeName: userId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: userId
+          KeyType: HASH
+
+  ProgressTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      TableName: data-journey-progress
+      AttributeDefinitions:
+        - AttributeName: userId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: userId
+          KeyType: HASH
+
+  LogsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      TableName: data-journey-logs
+      AttributeDefinitions:
+        - AttributeName: userId
+          AttributeType: S
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: userId
+          KeyType: HASH
+        - AttributeName: id
+          KeyType: RANGE
+
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: data-journey-user-pool
+      AutoVerifiedAttributes:
+        - email
+      UsernameAttributes:
+        - email
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 6
+          RequireLowercase: true
+          RequireUppercase: false
+          RequireNumbers: true
+          RequireSymbols: false
+
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref UserPool
+      ClientName: data-journey-web-client
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+        - ALLOW_USER_SRP_AUTH
+
+  Api:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowOrigins:
+          - !Ref AllowedOrigin
+        AllowHeaders:
+          - authorization
+          - content-type
+        AllowMethods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - OPTIONS
+      Auth:
+        Authorizers:
+          CognitoAuthorizer:
+            JwtConfiguration:
+              issuer: !Sub "https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}"
+              audience:
+                - !Ref UserPoolClient
+            IdentitySource: "$request.header.Authorization"
+        DefaultAuthorizer: CognitoAuthorizer
+
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambda/
+      Handler: index.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ProfilesTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ProgressTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref LogsTable
+      Environment:
+        Variables:
+          PROFILES_TABLE: !Ref ProfilesTable
+          PROGRESS_TABLE: !Ref ProgressTable
+          LOGS_TABLE: !Ref LogsTable
+      Events:
+        GetProfile:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Path: /profile
+            Method: GET
+        PutProfile:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Path: /profile
+            Method: PUT
+        GetProgress:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Path: /progress
+            Method: GET
+        PutProgress:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Path: /progress
+            Method: PUT
+        GetLogs:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Path: /logs
+            Method: GET
+        PostLogs:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Path: /logs
+            Method: POST
+        DeleteLog:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Path: /logs/{id}
+            Method: DELETE
+        ImportData:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Path: /import
+            Method: POST
+
+Outputs:
+  ApiBaseUrl:
+    Value: !Sub "https://${Api}.execute-api.${AWS::Region}.amazonaws.com"
+  UserPoolId:
+    Value: !Ref UserPool
+  UserPoolClientId:
+    Value: !Ref UserPoolClient

@@ -22,7 +22,7 @@
 
     <section id="setupNotice" class="panel hidden">
       <h2>Setup Required</h2>
-      <p class="muted">Supabase config is missing. Add your project values to <code>docs/config.js</code> using <code>docs/config.example.js</code>.</p>
+      <p class="muted">AWS config is missing. Add your values to <code>docs/aws-config.js</code> using <code>docs/aws-config.example.js</code>.</p>
     </section>
 
     <section id="authSection" class="panel auth-grid hidden">
@@ -41,6 +41,14 @@
           <label>Email<input required id="loginEmail" type="email" /></label>
           <label>Password<input required id="loginPass" type="password" /></label>
           <button type="submit">Log In</button>
+        </form>
+      </div>
+      <div>
+        <h2>Verify Email</h2>
+        <form id="verifyForm" class="stack">
+          <label>Email<input required id="verifyEmail" type="email" /></label>
+          <label>Verification Code<input required id="verifyCode" type="text" /></label>
+          <button type="submit">Confirm Account</button>
         </form>
       </div>
     </section>
@@ -137,8 +145,8 @@
     <p id="message" class="message" aria-live="polite"></p>
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js"></script>
+  <script src="https://unpkg.com/aws-amplify@5.3.12/dist/aws-amplify.min.js"></script>
+  <script src="aws-config.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

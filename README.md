@@ -52,7 +52,7 @@ Week 0 checklist here: [`templates/week-0-daily-checklist.md`](templates/week-0-
 ## GitHub Pages Learning Tracker
 - Website source: [`docs/index.html`](docs/index.html)
 - Features:
-  - Real account auth (Supabase email/password)
+  - Real account auth (AWS Cognito email/password)
   - Track Week 0 to Week 12 completion
   - Add daily learning logs with hours
   - View completion %, total hours, and streak
@@ -60,9 +60,9 @@ Week 0 checklist here: [`templates/week-0-daily-checklist.md`](templates/week-0-
   - Export/import your progress data from cloud account
 
 Important:
-- Configure Supabase first using [`docs/supabase-setup.md`](docs/supabase-setup.md).
-- Add keys in [`docs/config.js`](docs/config.js) using [`docs/config.example.js`](docs/config.example.js).
-- Database schema and RLS policies: [`supabase/schema.sql`](supabase/schema.sql).
+- Configure AWS first using [`docs/aws-setup.md`](docs/aws-setup.md).
+- Add AWS values in [`docs/aws-config.js`](docs/aws-config.js) using [`docs/aws-config.example.js`](docs/aws-config.example.js).
+- Backend infrastructure and API code are in [`aws/template.yaml`](aws/template.yaml) and [`aws/lambda/index.mjs`](aws/lambda/index.mjs).
 
 ## Projects You Will Build
 1. Analytics Dashboard with KPI storytelling
