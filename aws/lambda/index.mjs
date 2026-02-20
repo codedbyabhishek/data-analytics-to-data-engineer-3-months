@@ -16,6 +16,10 @@ const PROFILES_TABLE = process.env.PROFILES_TABLE;
 const PROGRESS_TABLE = process.env.PROGRESS_TABLE;
 const LOGS_TABLE = process.env.LOGS_TABLE;
 const DEFAULT_COURSE_ID = "analytics-to-de";
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || "";
+const STRIPE_PRICE_PRO = process.env.STRIPE_PRICE_PRO || "";
+const STRIPE_PRICE_TEAM = process.env.STRIPE_PRICE_TEAM || "";
+const APP_BASE_URL = process.env.APP_BASE_URL || "https://codedbyabhishek.github.io/data-analytics-to-data-engineer-3-months/";
 
 const WEEK_IDS = Array.from({ length: 13 }, (_, i) => i);
 
@@ -71,6 +75,35 @@ function normalizeProgress(item = {}) {
   };
 }
 
+function plansCatalog() {
+  return [
+    {
+      id: "free",
+      name: "Free",
+      monthlyUsd: 0,
+      features: ["Core tracker", "Single learner dashboard", "Progress logs"]
+    },
+    {
+      id: "pro",
+      name: "Pro",
+      monthlyUsd: 19,
+      features: ["All courses", "Certificates + sharing", "Advanced analytics"]
+    },
+    {
+      id: "team",
+      name: "Team",
+      monthlyUsd: 79,
+      features: ["Team dashboard", "Multiple learners", "Admin controls"]
+    }
+  ];
+}
+
+function stripePriceForPlan(planId) {
+  if (planId === "pro") return STRIPE_PRICE_PRO;
+  if (planId === "team") return STRIPE_PRICE_TEAM;
+  return "";
+}
+
 function response(statusCode, body) {
   return {
     statusCode,
@@ -109,6 +142,9 @@ async function getOrCreateProfile(userId, email) {
     userId,
     fullName: email || "Learner",
     email,
+    subscriptionPlan: "free",
+    subscriptionStatus: "active",
+    subscriptionUpdatedAt: now,
     createdAt: now,
     updatedAt: now
   };
@@ -219,6 +255,92 @@ export const handler = async (event) => {
     if (method === "GET" && path === "/profile") {
       const profile = await getOrCreateProfile(userId, email);
       return response(200, profile);
+    }
+
+    if (method === "GET" && path === "/billing/plans") {
+      return response(200, { plans: plansCatalog() });
+    }
+
+    if (method === "GET" && path === "/billing/subscription") {
+      const profile = await getOrCreateProfile(userId, email);
+      return response(200, {
+        plan: profile.subscriptionPlan || "free",
+        status: profile.subscriptionStatus || "active",
+        updatedAt: profile.subscriptionUpdatedAt || profile.updatedAt
+      });
+    }
+
+    if (method === "POST" && path === "/billing/create-checkout-session") {
+      const body = JSON.parse(event.body || "{}");
+      const planId = String(body.planId || "").trim();
+      const validPlan = ["pro", "team"].includes(planId);
+      if (!validPlan) {
+        return response(400, { error: "planId must be pro or team" });
+      }
+
+      const priceId = stripePriceForPlan(planId);
+      if (!STRIPE_SECRET_KEY || !priceId) {
+        return response(400, {
+          error: "Stripe not configured",
+          hint: "Set STRIPE_SECRET_KEY and STRIPE_PRICE_PRO/TEAM environment variables."
+        });
+      }
+
+      const form = new URLSearchParams();
+      form.set("mode", "subscription");
+      form.set("success_url", `${APP_BASE_URL}?billing=success&plan=${planId}`);
+      form.set("cancel_url", `${APP_BASE_URL}?billing=cancel`);
+      form.set("line_items[0][price]", priceId);
+      form.set("line_items[0][quantity]", "1");
+      form.set("client_reference_id", userId);
+      form.set("customer_email", email);
+      form.set("metadata[userId]", userId);
+      form.set("metadata[planId]", planId);
+
+      const stripeRes = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${STRIPE_SECRET_KEY}`,
+          "content-type": "application/x-www-form-urlencoded"
+        },
+        body: form
+      });
+
+      const stripePayload = await stripeRes.json();
+      if (!stripeRes.ok) {
+        return response(400, {
+          error: stripePayload?.error?.message || "Failed to create Stripe checkout session"
+        });
+      }
+
+      return response(200, { checkoutUrl: stripePayload.url || "" });
+    }
+
+    if (method === "POST" && path === "/billing/set-plan") {
+      const body = JSON.parse(event.body || "{}");
+      const plan = String(body.plan || "free").trim();
+      const status = String(body.status || "active").trim();
+      if (!["free", "pro", "team"].includes(plan)) {
+        return response(400, { error: "Invalid plan" });
+      }
+
+      const now = new Date().toISOString();
+      await ddb.send(
+        new UpdateCommand({
+          TableName: PROFILES_TABLE,
+          Key: { userId },
+          UpdateExpression:
+            "SET subscriptionPlan = :plan, subscriptionStatus = :status, subscriptionUpdatedAt = :ts, updatedAt = :ts, email = :email",
+          ExpressionAttributeValues: {
+            ":plan": plan,
+            ":status": status,
+            ":ts": now,
+            ":email": email
+          }
+        })
+      );
+
+      return response(200, { ok: true, plan, status, updatedAt: now });
     }
 
     if (method === "PUT" && path === "/profile") {

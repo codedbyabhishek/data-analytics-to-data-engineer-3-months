@@ -27,6 +27,12 @@ During `sam deploy --guided`:
 - Region: your preferred region (example `us-east-1`)
 - Parameter `AllowedOrigin`: your GitHub Pages URL
   - Example: `https://codedbyabhishek.github.io`
+- Parameter `AppBaseUrl`: your full app URL
+  - Example: `https://codedbyabhishek.github.io/data-analytics-to-data-engineer-3-months/`
+- Optional Stripe params:
+  - `StripeSecretKey`
+  - `StripePricePro`
+  - `StripePriceTeam`
 
 After deploy, copy outputs:
 - `ApiBaseUrl`

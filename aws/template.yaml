@@ -7,6 +7,19 @@ Parameters:
     Type: String
     Default: "*"
     Description: CORS origin for API requests (set to your GitHub Pages URL in production)
+  AppBaseUrl:
+    Type: String
+    Default: "https://codedbyabhishek.github.io/data-analytics-to-data-engineer-3-months/"
+  StripeSecretKey:
+    Type: String
+    Default: ""
+    NoEcho: true
+  StripePricePro:
+    Type: String
+    Default: ""
+  StripePriceTeam:
+    Type: String
+    Default: ""
 
 Globals:
   Function:
@@ -124,6 +137,10 @@ Resources:
           PROFILES_TABLE: !Ref ProfilesTable
           PROGRESS_TABLE: !Ref ProgressTable
           LOGS_TABLE: !Ref LogsTable
+          APP_BASE_URL: !Ref AppBaseUrl
+          STRIPE_SECRET_KEY: !Ref StripeSecretKey
+          STRIPE_PRICE_PRO: !Ref StripePricePro
+          STRIPE_PRICE_TEAM: !Ref StripePriceTeam
       Events:
         GetProfile:
           Type: HttpApi
@@ -172,6 +189,30 @@ Resources:
           Properties:
             ApiId: !Ref Api
             Path: /import
+            Method: POST
+        BillingPlans:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Path: /billing/plans
+            Method: GET
+        BillingSubscription:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Path: /billing/subscription
+            Method: GET
+        BillingCheckout:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Path: /billing/create-checkout-session
+            Method: POST
+        BillingSetPlan:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Path: /billing/set-plan
             Method: POST
 
 Outputs:

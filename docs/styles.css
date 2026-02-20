@@ -302,6 +302,43 @@ button.secondary,
   color: #5e6e8a;
 }
 
+.billing-panel {
+  margin-top: 1rem;
+}
+
+.plans-grid {
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+}
+
+.plan-card {
+  border: 1px solid #d8e2f2;
+  border-radius: 12px;
+  padding: 0.75rem;
+  background: #fff;
+}
+
+.plan-card.current {
+  border-color: #7ca5ff;
+  background: #f5f9ff;
+}
+
+.plan-card h3 {
+  margin: 0;
+}
+
+.plan-price {
+  margin: 0.25rem 0 0.45rem;
+  font-weight: 700;
+  color: #2b3f67;
+}
+
+.plan-card ul {
+  margin: 0 0 0.55rem;
+  padding-left: 1rem;
+}
+
 .file-btn {
   position: relative;
   display: inline-flex;

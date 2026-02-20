@@ -54,6 +54,8 @@ const completionBar = document.getElementById("completionBar");
 const totalHours = document.getElementById("totalHours");
 const streakCount = document.getElementById("streakCount");
 const weeksDone = document.getElementById("weeksDone");
+const billingStatus = document.getElementById("billingStatus");
+const plansGrid = document.getElementById("plansGrid");
 
 const weeksGrid = document.getElementById("weeksGrid");
 const logForm = document.getElementById("logForm");
@@ -104,7 +106,9 @@ let state = {
   profile: null,
   progress: null,
   logs: [],
-  activeCourseId: DEFAULT_COURSE_ID
+  activeCourseId: DEFAULT_COURSE_ID,
+  billing: null,
+  plans: []
 };
 
 function showMessage(msg, isError = true) {
@@ -345,10 +349,17 @@ async function loadLogsForActiveCourse() {
 }
 
 async function loadState() {
-  const [profile, progressRaw] = await Promise.all([apiFetch("/profile"), apiFetch("/progress")]);
+  const [profile, progressRaw, plansPayload, billingPayload] = await Promise.all([
+    apiFetch("/profile"),
+    apiFetch("/progress"),
+    apiFetch("/billing/plans"),
+    apiFetch("/billing/subscription")
+  ]);
   state.profile = profile;
   state.progress = normalizeProgress(progressRaw);
   state.activeCourseId = state.progress.activeCourseId || COURSES[0].id;
+  state.plans = plansPayload.plans || [];
+  state.billing = billingPayload || { plan: "free", status: "active" };
   await loadLogsForActiveCourse();
 }
 
@@ -571,6 +582,31 @@ function renderCertificate() {
   `;
 }
 
+function renderBilling() {
+  if (!plansGrid || !billingStatus) return;
+  const currentPlan = state.billing?.plan || "free";
+  const currentStatus = state.billing?.status || "active";
+  billingStatus.textContent = `Current plan: ${currentPlan.toUpperCase()} (${currentStatus})`;
+
+  plansGrid.innerHTML = "";
+  for (const plan of state.plans) {
+    const isCurrent = plan.id === currentPlan;
+    const card = document.createElement("article");
+    card.className = `plan-card ${isCurrent ? "current" : ""}`;
+    card.innerHTML = `
+      <h3>${plan.name}</h3>
+      <p class="plan-price">${plan.monthlyUsd === 0 ? "Free" : `$${plan.monthlyUsd}/month`}</p>
+      <ul>
+        ${(plan.features || []).map((f) => `<li>${f}</li>`).join("")}
+      </ul>
+      <button data-plan-id="${plan.id}" ${isCurrent ? "disabled" : ""}>
+        ${isCurrent ? "Current Plan" : plan.id === "free" ? "Downgrade to Free" : `Upgrade to ${plan.name}`}
+      </button>
+    `;
+    plansGrid.appendChild(card);
+  }
+}
+
 function renderApp(user) {
   const fullName = state.profile.fullName || user.attributes.name || user.attributes.email;
   welcomeText.textContent = `Welcome, ${fullName}`;
@@ -584,6 +620,7 @@ function renderApp(user) {
   renderWeeks();
   renderLogs();
   renderCertificate();
+  renderBilling();
 }
 
 async function renderAuthState() {
@@ -634,6 +671,37 @@ courseSelect?.addEventListener("change", async () => {
     showMessage(`Switched to ${COURSE_MAP[nextCourseId].title}.`, false);
   } catch (err) {
     showMessage(err.message);
+  }
+});
+
+plansGrid?.addEventListener("click", async (e) => {
+  const btn = e.target.closest("button[data-plan-id]");
+  if (!btn) return;
+  const planId = btn.dataset.planId;
+  if (!planId || planId === state.billing?.plan) return;
+
+  try {
+    if (planId === "free") {
+      const updated = await apiFetch("/billing/set-plan", {
+        method: "POST",
+        body: JSON.stringify({ plan: "free", status: "active" })
+      });
+      state.billing = { plan: updated.plan, status: updated.status, updatedAt: updated.updatedAt };
+      renderBilling();
+      showMessage("Plan updated to Free.", false);
+      return;
+    }
+
+    const checkout = await apiFetch("/billing/create-checkout-session", {
+      method: "POST",
+      body: JSON.stringify({ planId })
+    });
+    if (!checkout.checkoutUrl) {
+      throw new Error("Checkout URL was not returned.");
+    }
+    window.open(checkout.checkoutUrl, "_blank");
+  } catch (err) {
+    showMessage(err.message || "Could not start checkout.");
   }
 });
 
